@@ -53,6 +53,18 @@ impl<'a> Interpreter<'a> {
                     else_clause.map(|expr| self.interpret(*expr)).unwrap_or(1)
                 }
             }
+            Expression::WhileExpression { condition, body } => {
+                loop {
+                    // TODO
+                    let condition = self.interpret(*condition.clone());
+                    if condition != 0 {
+                        self.interpret(*body.clone());
+                    } else {
+                        break;
+                    }
+                }
+                1
+            }
         }
     }
 }
@@ -184,5 +196,21 @@ mod test {
             Some(integer(42)),
         );
         assert_eq!(33, interpreter().interpret(e));
+    }
+
+    #[test]
+    fn test_while_expression_partially_should_work() {
+        let mut interpreter = interpreter();
+        // val count = 0
+        let e1 = assignment("count", integer(0));
+        assert_eq!(0, interpreter.interpret(e1));
+        // while (count < 3) {
+        //    count = count + 1
+        // }
+        let e2 = r#while(
+            less_than(identifier("count"), integer(3)),
+            assignment("count", add(identifier("count"), integer(1))),
+        );
+        assert_eq!(1, interpreter.interpret(e2));
     }
 }

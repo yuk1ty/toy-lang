@@ -107,7 +107,14 @@ pub fn r#if<'a>(
     }
 }
 
-#[derive(PartialEq, Debug)]
+pub fn r#while<'a>(condition: Expression<'a>, body: Expression<'a>) -> Expression<'a> {
+    Expression::WhileExpression {
+        condition: Box::new(condition),
+        body: Box::new(body),
+    }
+}
+
+#[derive(PartialEq, Clone, Debug)]
 pub enum Expression<'a> {
     BinaryExpression {
         operator: Operator,
@@ -125,9 +132,13 @@ pub enum Expression<'a> {
         then_clause: Box<Expression<'a>>,
         else_clause: Option<Box<Expression<'a>>>,
     },
+    WhileExpression {
+        condition: Box<Expression<'a>>,
+        body: Box<Expression<'a>>,
+    },
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum Operator {
     Add,
     Subtract,
