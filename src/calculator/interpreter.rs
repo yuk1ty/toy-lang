@@ -23,17 +23,35 @@ impl<'a> Interpreter<'a> {
                     Operator::Subtract => lhs - rhs,
                     Operator::Multiply => lhs * rhs,
                     Operator::Divide => lhs / rhs,
+                    Operator::GreaterThan => (lhs > rhs) as i32,
+                    Operator::LessThan => (lhs < rhs) as i32,
+                    Operator::GreaterThanEqual => (lhs >= rhs) as i32,
+                    Operator::LessThanEqual => (lhs <= rhs) as i32,
+                    Operator::EqualEqual => (lhs == rhs) as i32,
+                    Operator::NotEqual => (lhs != rhs) as i32,
                 }
             }
             Expression::IntegerLiteral(value) => value,
             Expression::Identifier(ident) => *self
                 .environment
                 .get(ident)
-                .expect(&format!("Undefined variable: {}", ident)),
+                .unwrap_or_else(|| panic!("Undefined variable: {}", ident)),
             Expression::Assignment { name, expression } => {
                 let value = self.interpret(*expression);
                 self.environment.insert(name, value);
                 value
+            }
+            Expression::IfExpression {
+                condition,
+                then_clause,
+                else_clause,
+            } => {
+                let condition = self.interpret(*condition);
+                if condition != 0 {
+                    self.interpret(*then_clause)
+                } else {
+                    else_clause.map(|expr| self.interpret(*expr)).unwrap_or(1)
+                }
             }
         }
     }
@@ -156,5 +174,15 @@ mod test {
         assert_eq!(20, interpreter.interpret(e1));
         let e2 = add(identifier("b"), integer(10));
         interpreter.interpret(e2);
+    }
+
+    #[test]
+    fn test_if_expression_partially_should_work() {
+        let e = r#if(
+            less_than(integer(1), integer(2)),
+            integer(33),
+            Some(integer(42)),
+        );
+        assert_eq!(33, interpreter().interpret(e));
     }
 }

@@ -32,6 +32,54 @@ pub fn divide<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
     }
 }
 
+pub fn less_than<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+    Expression::BinaryExpression {
+        operator: Operator::LessThan,
+        lhs: Box::new(lhs),
+        rhs: Box::new(rhs),
+    }
+}
+
+pub fn greater_than<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+    Expression::BinaryExpression {
+        operator: Operator::GreaterThan,
+        lhs: Box::new(lhs),
+        rhs: Box::new(rhs),
+    }
+}
+
+pub fn less_than_equal<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+    Expression::BinaryExpression {
+        operator: Operator::LessThanEqual,
+        lhs: Box::new(lhs),
+        rhs: Box::new(rhs),
+    }
+}
+
+pub fn greater_than_equal<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+    Expression::BinaryExpression {
+        operator: Operator::GreaterThanEqual,
+        lhs: Box::new(lhs),
+        rhs: Box::new(rhs),
+    }
+}
+
+pub fn equal_equal<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+    Expression::BinaryExpression {
+        operator: Operator::EqualEqual,
+        lhs: Box::new(lhs),
+        rhs: Box::new(rhs),
+    }
+}
+
+pub fn not_equal<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+    Expression::BinaryExpression {
+        operator: Operator::NotEqual,
+        lhs: Box::new(lhs),
+        rhs: Box::new(rhs),
+    }
+}
+
 pub fn integer<'a>(value: i32) -> Expression<'a> {
     Expression::IntegerLiteral(value)
 }
@@ -43,8 +91,20 @@ pub fn assignment<'a>(name: &'a str, expression: Expression<'a>) -> Expression<'
     }
 }
 
-pub fn identifier<'a>(name: &'a str) -> Expression<'a> {
+pub fn identifier(name: &str) -> Expression {
     Expression::Identifier(name)
+}
+
+pub fn r#if<'a>(
+    condition: Expression<'a>,
+    then_clause: Expression<'a>,
+    else_clause: Option<Expression<'a>>,
+) -> Expression<'a> {
+    Expression::IfExpression {
+        condition: Box::new(condition),
+        then_clause: Box::new(then_clause),
+        else_clause: else_clause.map(Box::new),
+    }
 }
 
 #[derive(PartialEq, Debug)]
@@ -60,6 +120,11 @@ pub enum Expression<'a> {
         expression: Box<Expression<'a>>,
     },
     Identifier(&'a str),
+    IfExpression {
+        condition: Box<Expression<'a>>,
+        then_clause: Box<Expression<'a>>,
+        else_clause: Option<Box<Expression<'a>>>,
+    },
 }
 
 #[derive(PartialEq, Debug)]
@@ -68,6 +133,12 @@ pub enum Operator {
     Subtract,
     Multiply,
     Divide,
+    LessThan,
+    GreaterThan,
+    LessThanEqual,
+    GreaterThanEqual,
+    EqualEqual,
+    NotEqual,
 }
 
 impl Operator {
@@ -77,6 +148,12 @@ impl Operator {
             Operator::Subtract => "-".to_string(),
             Operator::Multiply => "*".to_string(),
             Operator::Divide => "/".to_string(),
+            Operator::LessThan => "<".to_string(),
+            Operator::GreaterThan => ">".to_string(),
+            Operator::LessThanEqual => "<=".to_string(),
+            Operator::GreaterThanEqual => ">=".to_string(),
+            Operator::EqualEqual => "==".to_string(),
+            Operator::NotEqual => "!=".to_string(),
         }
     }
 }
