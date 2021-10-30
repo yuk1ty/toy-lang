@@ -155,6 +155,10 @@ pub enum TopLevel<'t> {
         args: Vec<&'t str>,
         body: Box<Expression<'t>>,
     },
+    GlobalVariableDefinition {
+        name: &'t str,
+        expression: Box<Expression<'t>>,
+    },
 }
 
 #[derive(PartialEq, Clone, Debug)]

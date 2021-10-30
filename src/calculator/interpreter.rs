@@ -4,10 +4,17 @@ use crate::calculator::ast::{Expression, Operator};
 
 use super::ast::{Environment, Program, TopLevel};
 
+/// Bureaucrat type to hold FunctionDefinition values.
+#[derive(PartialEq, Clone, Debug)]
+struct FunctionDef<'a> {
+    name: &'a str,
+    args: Vec<&'a str>,
+    body: Box<Expression<'a>>,
+}
+
 pub struct Interpreter<'a> {
     variable_environment: Environment<'a>,
-    // If create another bureaucracy type to hold map's value, the complexity in call_main can be decreased.
-    function_environment: HashMap<&'a str, TopLevel<'a>>,
+    function_environment: HashMap<&'a str, FunctionDef<'a>>,
 }
 
 impl<'a> Interpreter<'a> {
@@ -25,14 +32,21 @@ impl<'a> Interpreter<'a> {
                 TopLevel::FunctionDefinition { name, args, body } => {
                     self.function_environment
                         // To avoid using unstable feature (#65490)
-                        .insert(name, TopLevel::FunctionDefinition { name, args, body });
+                        .insert(name, FunctionDef { name, args, body });
+                }
+                TopLevel::GlobalVariableDefinition { name, expression } => {
+                    let body = self.interpret(*expression);
+                    self.variable_environment
+                        .bindings
+                        .borrow_mut()
+                        .insert(name, body);
                 }
             }
         }
         let main_function = self.function_environment.get("main").cloned();
         match main_function {
             Some(main_func) => {
-                let TopLevel::FunctionDefinition {
+                let FunctionDef {
                     name: _,
                     args: _,
                     body,
@@ -119,7 +133,7 @@ impl<'a> Interpreter<'a> {
                 let definition = self.function_environment.get(name).cloned();
                 match definition {
                     Some(def) => {
-                        let TopLevel::FunctionDefinition {
+                        let FunctionDef {
                             name: _,
                             args: fd_args,
                             body: fd_body,
