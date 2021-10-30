@@ -118,6 +118,25 @@ pub fn block(expression: Vec<Expression>) -> Expression {
     Expression::BlockExpression(expression)
 }
 
+pub fn call<'a>(name: &'a str, elements: Vec<Expression<'a>>) -> Expression<'a> {
+    Expression::FunctionCall {
+        name,
+        args: elements,
+    }
+}
+
+pub fn define_function<'a>(
+    name: &'a str,
+    args: Vec<&'a str>,
+    body: Expression<'a>,
+) -> TopLevel<'a> {
+    TopLevel::FunctionDefinition {
+        name,
+        args,
+        body: Box::new(body),
+    }
+}
+
 #[derive(PartialEq, Clone, Debug)]
 pub enum Expression<'a> {
     BinaryExpression {
@@ -165,6 +184,10 @@ pub enum TopLevel<'t> {
 pub struct Program<'p>(Vec<TopLevel<'p>>);
 
 impl<'p> Program<'p> {
+    pub fn new(top_levels: Vec<TopLevel<'p>>) -> Self {
+        Program(top_levels)
+    }
+
     pub fn definitions(self) -> Vec<TopLevel<'p>> {
         self.0
     }

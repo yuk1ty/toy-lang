@@ -152,7 +152,7 @@ impl<'a> Interpreter<'a> {
                                 formal_param_name,
                                 *values
                                     .get(i)
-                                    .expect(&format!("Value not found at index: {}", i)),
+                                    .unwrap_or_else(|| panic!("Value not found at index: {}", i)),
                             );
                         }
                         let result = self.interpret(*fd_body);
@@ -314,5 +314,27 @@ mod test {
             assignment("count", add(identifier("count"), integer(1))),
         );
         assert_eq!(1, interpreter.interpret(e2));
+    }
+
+    #[test]
+    fn test_factorial() {
+        let top_levels = vec![
+            define_function("main", vec![], block(vec![call("fact", vec![integer(5)])])),
+            define_function(
+                "fact",
+                vec!["n"],
+                block(vec![r#if(
+                    less_than(identifier("n"), integer(2)),
+                    integer(1),
+                    Some(multiply(
+                        identifier("n"),
+                        call("fact", vec![subtract(identifier("n"), integer(1))]),
+                    )),
+                )]),
+            ),
+        ];
+
+        let result = interpreter().call_main(Program::new(top_levels));
+        assert_eq!(120, result);
     }
 }
