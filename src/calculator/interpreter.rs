@@ -267,7 +267,7 @@ mod test {
         let mut interpreter = interpreter();
         let e1 = assignment("a", add(integer(10), integer(10)));
         assert_eq!(20, interpreter.interpret(e1));
-        let e2 = add(identifier("a"), integer(10));
+        let e2 = add(symbol("a"), integer(10));
         assert_eq!(30, interpreter.interpret(e2));
     }
 
@@ -276,7 +276,7 @@ mod test {
         let mut interpreter = interpreter();
         let e1 = assignment("a", add(integer(10), integer(10)));
         assert_eq!(20, interpreter.interpret(e1));
-        let e2 = add(identifier("a"), integer(10));
+        let e2 = add(symbol("a"), integer(10));
         assert_eq!(30, interpreter.interpret(e2));
     }
 
@@ -286,7 +286,7 @@ mod test {
         let mut interpreter = interpreter();
         let e1 = assignment("a", add(integer(10), integer(10)));
         assert_eq!(20, interpreter.interpret(e1));
-        let e2 = add(identifier("b"), integer(10));
+        let e2 = add(symbol("b"), integer(10));
         interpreter.interpret(e2);
     }
 
@@ -310,8 +310,8 @@ mod test {
         //    count = count + 1
         // }
         let e2 = r#while(
-            less_than(identifier("count"), integer(3)),
-            assignment("count", add(identifier("count"), integer(1))),
+            less_than(symbol("count"), integer(3)),
+            assignment("count", add(symbol("count"), integer(1))),
         );
         assert_eq!(1, interpreter.interpret(e2));
     }
@@ -324,11 +324,11 @@ mod test {
                 "fact",
                 vec!["n"],
                 block(vec![r#if(
-                    less_than(identifier("n"), integer(2)),
+                    less_than(symbol("n"), integer(2)),
                     integer(1),
                     Some(multiply(
-                        identifier("n"),
-                        call("fact", vec![subtract(identifier("n"), integer(1))]),
+                        symbol("n"),
+                        call("fact", vec![subtract(symbol("n"), integer(1))]),
                     )),
                 )]),
             ),

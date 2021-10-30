@@ -91,7 +91,7 @@ pub fn assignment<'a>(name: &'a str, expression: Expression<'a>) -> Expression<'
     }
 }
 
-pub fn identifier(name: &str) -> Expression {
+pub fn symbol(name: &str) -> Expression {
     Expression::Identifier(name)
 }
 
