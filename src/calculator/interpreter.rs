@@ -65,6 +65,13 @@ impl<'a> Interpreter<'a> {
                 }
                 1
             }
+            Expression::BlockExpression(elements) => {
+                let mut value = 0;
+                for elem in elements {
+                    value = self.interpret(elem);
+                }
+                value
+            }
         }
     }
 }

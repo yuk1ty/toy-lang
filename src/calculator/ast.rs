@@ -114,6 +114,10 @@ pub fn r#while<'a>(condition: Expression<'a>, body: Expression<'a>) -> Expressio
     }
 }
 
+pub fn block(expression: Vec<Expression>) -> Expression {
+    Expression::BlockExpression(expression)
+}
+
 #[derive(PartialEq, Clone, Debug)]
 pub enum Expression<'a> {
     BinaryExpression {
@@ -136,6 +140,7 @@ pub enum Expression<'a> {
         condition: Box<Expression<'a>>,
         body: Box<Expression<'a>>,
     },
+    BlockExpression(Vec<Expression<'a>>),
 }
 
 #[derive(PartialEq, Clone, Debug)]
