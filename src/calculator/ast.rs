@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{cell::RefCell, collections::HashMap, fmt::Debug, rc::Rc};
 
 pub fn add<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
     Expression::BinaryExpression {
@@ -141,6 +141,60 @@ pub enum Expression<'a> {
         body: Box<Expression<'a>>,
     },
     BlockExpression(Vec<Expression<'a>>),
+    FunctionCall {
+        name: &'a str,
+        args: Vec<Expression<'a>>,
+    },
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub enum TopLevel<'t> {
+    // To avoid using unstable feature (#65490)
+    FunctionDefinition {
+        name: &'t str,
+        args: Vec<&'t str>,
+        body: Box<Expression<'t>>,
+    },
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct Program<'p>(Vec<TopLevel<'p>>);
+
+impl<'p> Program<'p> {
+    pub fn definitions(self) -> Vec<TopLevel<'p>> {
+        self.0
+    }
+}
+
+pub type Binding<'e> = Rc<RefCell<HashMap<&'e str, i32>>>;
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct Environment<'e> {
+    pub bindings: Binding<'e>,
+    next: Option<Box<Environment<'e>>>,
+}
+
+impl<'a> Environment<'a> {
+    pub fn new() -> Self {
+        Self {
+            bindings: Rc::new(RefCell::new(HashMap::new())),
+            next: None,
+        }
+    }
+
+    pub fn with_next(next: Option<Box<Environment<'a>>>) -> Self {
+        Self {
+            bindings: Rc::new(RefCell::new(HashMap::new())),
+            next,
+        }
+    }
+
+    pub fn find_binding(&self, name: &str) -> Option<Binding<'a>> {
+        if self.bindings.borrow_mut().get(name).is_some() {
+            return Some(self.bindings.clone());
+        }
+        self.next.as_ref().and_then(|n| n.find_binding(name))
+    }
 }
 
 #[derive(PartialEq, Clone, Debug)]
