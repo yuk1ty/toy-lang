@@ -407,7 +407,7 @@ parser! {
     }
 }
 
-fn line<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+fn line_<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
 where
     Input: Stream<Token = char>,
     <Input as StreamOnce>::Error: ParseError<
@@ -416,7 +416,17 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    expression_line()
+    choice! {
+        assignment(),
+        expression_line(),
+        block_expression()
+    }
+}
+
+parser! {
+    fn line['a, Input]()(Input) -> Expression<'a> where [ Input: Stream<Token = char> ] {
+        line_()
+    }
 }
 
 fn expression_line<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
