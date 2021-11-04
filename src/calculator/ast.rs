@@ -91,8 +91,8 @@ pub fn assignment<'a>(name: &'a str, expression: Expression<'a>) -> Expression<'
     }
 }
 
-pub fn symbol(name: &str) -> Expression {
-    Expression::Identifier(name)
+pub fn symbol<'a>(name: impl Into<String>) -> Expression<'a> {
+    Expression::Identifier(name.into())
 }
 
 pub fn r#if<'a>(
@@ -149,7 +149,7 @@ pub enum Expression<'a> {
         name: &'a str,
         expression: Box<Expression<'a>>,
     },
-    Identifier(&'a str),
+    Identifier(String),
     IfExpression {
         condition: Box<Expression<'a>>,
         then_clause: Box<Expression<'a>>,

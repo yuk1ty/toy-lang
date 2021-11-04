@@ -78,11 +78,11 @@ impl<'a> Interpreter<'a> {
             Expression::IntegerLiteral(value) => value,
             Expression::Identifier(ident) => self
                 .variable_environment
-                .find_binding(ident)
+                .find_binding(&ident)
                 // FIXME: Wildly unwrapping ;) Needs to be replaced to anyhow.
                 .and_then(|elem| {
                     let elem = &*elem;
-                    elem.borrow().get(ident).cloned()
+                    elem.borrow().get(ident.as_str()).cloned()
                 })
                 .unwrap_or_else(|| panic!("Undefined variable: {}", ident)),
             Expression::Assignment { name, expression } => {
