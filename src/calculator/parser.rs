@@ -1,7 +1,7 @@
 use combine::{
     attempt, chainl1, many, many1, parser,
     parser::char::{alpha_num, digit, spaces, string},
-    ParseError, Parser, Stream, StreamOnce,
+    satisfy_map, ParseError, Parser, Stream, StreamOnce,
 };
 
 use crate::calculator::ast::*;
@@ -299,9 +299,9 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    let s1 = attempt(lparen()).then(|_| expression().then(|v| rparen().map(move |_| v.clone())));
-    let s2 = s1.or(integer());
-    s2
+    attempt(lparen())
+        .then(|_| expression().then(|v| rparen().map(move |_| v.clone())))
+        .or(integer())
 }
 
 fn multitive<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
@@ -313,9 +313,12 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    let mul = aster().map(|_| |l: Expression<'a>, r: Expression<'a>| multiply(l, r));
-    let div = slash().map(|_| |l: Expression<'a>, r: Expression<'a>| divide(l, r));
-    chainl1(primary(), mul).or(chainl1(primary(), div))
+    let op = aster().or(slash()).map(|s| match s {
+        "*" => |l: Expression<'a>, r: Expression<'a>| multiply(l, r),
+        "/" => |l: Expression<'a>, r: Expression<'a>| divide(l, r),
+        _ => unreachable!(),
+    });
+    chainl1(primary(), op)
 }
 
 fn additive<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
@@ -327,9 +330,12 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    let add = plus().map(|_| |l: Expression<'a>, r: Expression<'a>| add(l, r));
-    let sub = minus().map(|_| |l: Expression<'a>, r: Expression<'a>| subtract(l, r));
-    chainl1(multitive(), add).or(chainl1(multitive(), sub))
+    let op = plus().or(minus()).map(|s| match s {
+        "+" => |l: Expression<'a>, r: Expression<'a>| add(l, r),
+        "-" => |l: Expression<'a>, r: Expression<'a>| subtract(l, r),
+        _ => unreachable!(),
+    });
+    chainl1(multitive(), op)
 }
 
 fn comparative<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
@@ -375,8 +381,76 @@ parser! {
     }
 }
 
-fn parse<'a>(source: &'a str) -> Program<'a> {
+pub fn parse<'a>(source: &'a str) -> Program<'a> {
     let mut parser = expression();
     let parsed = parser.parse(source).unwrap();
     Program::new(Vec::new())
+}
+
+#[cfg(test)]
+mod test {
+    use combine::Parser;
+
+    use crate::calculator::{
+        ast::{add, divide, integer, multiply, subtract},
+        parser::multitive,
+    };
+
+    use super::additive;
+
+    #[test]
+    fn test_add() {
+        let mut parser = additive();
+        let actual = parser.parse("1 + 2");
+        assert_eq!((add(integer(1), integer(2)), ""), actual.unwrap());
+    }
+
+    #[test]
+    fn test_sub() {
+        let mut parser = additive();
+        let actual = parser.parse("2 - 1");
+        assert_eq!((subtract(integer(2), integer(1)), ""), actual.unwrap());
+    }
+
+    #[test]
+    fn test_mul() {
+        let mut parser = multitive();
+        let actual = parser.parse("2 * 1");
+        assert_eq!((multiply(integer(2), integer(1)), ""), actual.unwrap());
+    }
+
+    #[test]
+    fn test_div() {
+        let mut parser = multitive();
+        let actual = parser.parse("2 / 1");
+        assert_eq!((divide(integer(2), integer(1)), ""), actual.unwrap());
+    }
+
+    #[test]
+    fn test_add_many_times() {
+        let mut parser = additive();
+        let actual = parser.parse("1 + 2 + 1 + 2");
+        assert_eq!("", actual.unwrap().1);
+    }
+
+    #[test]
+    fn test_sub_many_times() {
+        let mut parser = additive();
+        let actual = parser.parse("3 - 1 - 1 - 1");
+        assert_eq!("", actual.unwrap().1);
+    }
+
+    #[test]
+    fn test_mul_many_times() {
+        let mut parser = multitive();
+        let actual = parser.parse("2 * 1 * 2 * 1");
+        assert_eq!("", actual.unwrap().1);
+    }
+
+    #[test]
+    fn test_div_many_times() {
+        let mut parser = multitive();
+        let actual = parser.parse("2 / 1 / 1 / 1");
+        assert_eq!("", actual.unwrap().1);
+    }
 }
