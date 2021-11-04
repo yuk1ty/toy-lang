@@ -1,7 +1,7 @@
 use combine::{
-    attempt, chainl1, many, many1, parser,
+    attempt, between, chainl1, choice, many, many1, parser,
     parser::char::{alpha_num, digit, spaces, string},
-    satisfy_map, ParseError, Parser, Stream, StreamOnce,
+    ParseError, Parser, Stream, StreamOnce,
 };
 
 use crate::calculator::ast::*;
@@ -330,10 +330,13 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    let op = plus().or(minus()).map(|s| match s {
-        "+" => |l: Expression<'a>, r: Expression<'a>| add(l, r),
-        "-" => |l: Expression<'a>, r: Expression<'a>| subtract(l, r),
-        _ => unreachable!(),
+    let op = plus().or(minus()).map(|s| {
+        println!("{}", s);
+        match s {
+            "+" => |l: Expression<'a>, r: Expression<'a>| add(l, r),
+            "-" => |l: Expression<'a>, r: Expression<'a>| subtract(l, r),
+            _ => unreachable!(),
+        }
     });
     chainl1(multitive(), op)
 }
@@ -347,20 +350,28 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    let lt = attempt(lt()).map(|_| |l: Expression<'a>, r: Expression<'a>| less_than(l, r));
-    let gt = attempt(gt()).map(|_| |l: Expression<'a>, r: Expression<'a>| greater_than(l, r));
-    let lte =
-        attempt(lt_eq()).map(|_| |l: Expression<'a>, r: Expression<'a>| less_than_equal(l, r));
-    let gte =
-        attempt(gt_eq()).map(|_| |l: Expression<'a>, r: Expression<'a>| greater_than_equal(l, r));
-    let eq = attempt(eq_eq()).map(|_| |l: Expression<'a>, r: Expression<'a>| equal_equal(l, r));
-    let neq = attempt(not_eq()).map(|_| |l: Expression<'a>, r: Expression<'a>| not_equal(l, r));
-    chainl1(additive(), lt)
-        .or(chainl1(additive(), gt))
-        .or(chainl1(additive(), lte))
-        .or(chainl1(additive(), gte))
-        .or(chainl1(additive(), eq))
-        .or(chainl1(additive(), neq))
+    println!("token start");
+    let tokens = choice! {
+        attempt(lt_eq()),
+        attempt(gt_eq()),
+        attempt(eq_eq()),
+        attempt(not_eq()),
+        attempt(lt()),
+        attempt(gt())
+    };
+
+    println!("op start");
+    let op = tokens.map(|s| match s {
+        "<" => |l: Expression<'a>, r: Expression<'a>| less_than(l, r),
+        ">" => |l: Expression<'a>, r: Expression<'a>| greater_than(l, r),
+        "<=" => |l: Expression<'a>, r: Expression<'a>| less_than_equal(l, r),
+        ">=" => |l: Expression<'a>, r: Expression<'a>| greater_than_equal(l, r),
+        "==" => |l: Expression<'a>, r: Expression<'a>| equal_equal(l, r),
+        "!=" => |l: Expression<'a>, r: Expression<'a>| not_equal(l, r),
+        _ => unreachable!(),
+    });
+
+    chainl1(additive(), op)
 }
 
 fn expression_<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
@@ -392,8 +403,11 @@ mod test {
     use combine::Parser;
 
     use crate::calculator::{
-        ast::{add, divide, integer, multiply, subtract},
-        parser::multitive,
+        ast::{
+            add, divide, equal_equal, greater_than, greater_than_equal, integer, less_than,
+            less_than_equal, multiply, not_equal, subtract,
+        },
+        parser::{comparative, multitive},
     };
 
     use super::additive;
@@ -452,5 +466,53 @@ mod test {
         let mut parser = multitive();
         let actual = parser.parse("2 / 1 / 1 / 1");
         assert_eq!("", actual.unwrap().1);
+    }
+
+    #[test]
+    fn test_less_than() {
+        let mut parser = comparative();
+        let actual = parser.parse("1 < 2");
+        assert_eq!((less_than(integer(1), integer(2)), ""), actual.unwrap());
+    }
+
+    #[test]
+    fn test_greater_than() {
+        let mut parser = comparative();
+        let actual = parser.parse("2 > 1");
+        assert_eq!((greater_than(integer(2), integer(1)), ""), actual.unwrap());
+    }
+
+    #[test]
+    fn test_less_than_equal() {
+        let mut parser = comparative();
+        let actual = parser.parse("1 <= 2");
+        assert_eq!(
+            (less_than_equal(integer(1), integer(2)), ""),
+            actual.unwrap()
+        );
+    }
+
+    #[test]
+    fn test_greater_than_equal() {
+        let mut parser = comparative();
+        let actual = parser.parse("2 >= 1");
+        assert_eq!(
+            (greater_than_equal(integer(2), integer(1)), ""),
+            actual.unwrap()
+        );
+    }
+
+    #[test]
+    fn test_equal_equal() {
+        let mut parser = comparative();
+        let actual = parser.parse("1 == 1");
+        assert_eq!((equal_equal(integer(1), integer(1)), ""), actual.unwrap());
+    }
+
+    #[test]
+    fn test_not_equal() {
+        let mut parser = comparative();
+        let actual = parser.parse("2 != 1");
+        assert_eq!((not_equal(integer(2), integer(1)), ""), actual.unwrap());
     }
 }
