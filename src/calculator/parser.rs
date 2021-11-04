@@ -1,5 +1,5 @@
 use combine::{
-    attempt, chainl1, choice, many, many1, parser,
+    attempt, between, chainl1, choice, many, many1, parser,
     parser::char::{alpha_num, digit, spaces, string},
     ParseError, Parser, Stream, StreamOnce,
 };
@@ -320,8 +320,9 @@ where
     >,
 {
     attempt(lparen())
-        .then(|_| expression().then(|v| rparen().map(move |_| v.clone())))
+        .with(expression().then(|v| rparen().map(move |_| v.clone())))
         .or(integer())
+        .or(identifier())
 }
 
 fn multitive<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
@@ -417,6 +418,8 @@ where
     >,
 {
     choice! {
+        while_expression(),
+        if_expression(),
         assignment(),
         expression_line(),
         block_expression()
@@ -451,7 +454,7 @@ where
     >,
 {
     lbrace()
-        .then(|_| many(line()))
+        .with(many(line()))
         .then(|expr: Vec<Expression>| rbrace().map(move |_| block(expr.clone())))
 }
 
@@ -465,13 +468,47 @@ where
     >,
 {
     ident().then(|name| {
-        eq().then(move |_| expression()).then(move |expr| {
+        eq().with(expression()).then(move |expr| {
             // bit technically. :thinking_face:
             let name = name.to_string();
             semi_colon()
                 .map(move |_| crate::calculator::ast::assignment(name.to_string(), expr.clone()))
         })
     })
+}
+
+fn if_expression<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    let condition = r#if().with(between(lparen(), rparen(), expression()));
+    // TODO else clause
+    attempt(
+        condition.then(|c| {
+            line().map(move |clause| crate::calculator::ast::r#if(c.clone(), clause, None))
+        }),
+    )
+}
+
+fn while_expression<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    let condition = r#while().with(between(lparen(), rparen(), expression()));
+    attempt(
+        condition
+            .then(|c| line().map(move |body| crate::calculator::ast::r#while(c.clone(), body))),
+    )
 }
 
 pub fn parse<'a>(source: &'a str) -> Program<'a> {
@@ -487,12 +524,12 @@ mod test {
     use crate::calculator::{
         ast::{
             add, divide, equal_equal, greater_than, greater_than_equal, integer, less_than,
-            less_than_equal, multiply, not_equal, subtract,
+            less_than_equal, multiply, not_equal, subtract, Expression,
         },
         parser::{comparative, multitive},
     };
 
-    use super::{additive, assignment};
+    use super::{additive, assignment, block_expression, while_expression};
 
     #[test]
     fn test_add() {
@@ -609,5 +646,36 @@ mod test {
             ),
             actual.unwrap()
         );
+    }
+
+    #[test]
+    fn test_block() {
+        let mut parser = block_expression();
+        let actual = parser.parse(
+            r#"
+        {
+            i = 1;
+            a = i * 2;
+            b = a > i;
+        }"#,
+        );
+        assert!(matches!(
+            actual.unwrap(),
+            (Expression::BlockExpression(_), "")
+        ));
+    }
+
+    #[test]
+    fn test_while() {
+        let mut parser = while_expression();
+        // TODO now failing
+        let actual = parser.parse(
+            r#"
+            while (i < 10) {
+                i = i + 1;
+            }
+        "#,
+        );
+        println!("{:?}", actual.unwrap());
     }
 }
