@@ -1,5 +1,5 @@
 use combine::{
-    attempt, between, chainl1, choice, many, many1, parser,
+    attempt, chainl1, choice, many, many1, parser,
     parser::char::{alpha_num, digit, spaces, string},
     ParseError, Parser, Stream, StreamOnce,
 };
@@ -32,8 +32,16 @@ where
     spaces().with(string("else").skip(spaces()))
 }
 
-fn r#while<'a>() -> impl Parser<&'a str, Output = &'a str> {
-    spaces().with(string("else").skip(spaces()))
+fn r#while<'a, Input>() -> impl Parser<Input, Output = &'a str>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    spaces().with(string("while").skip(spaces()))
 }
 
 fn plus<'a, Input>() -> impl Parser<Input, Output = &'a str>
@@ -142,6 +150,18 @@ where
     >,
 {
     spaces().with(string("==").skip(spaces()))
+}
+
+fn eq<'a, Input>() -> impl Parser<Input, Output = &'a str>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    spaces().with(string("=").skip(spaces()))
 }
 
 fn not_eq<'a, Input>() -> impl Parser<Input, Output = &'a str>
@@ -330,13 +350,10 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    let op = plus().or(minus()).map(|s| {
-        println!("{}", s);
-        match s {
-            "+" => |l: Expression<'a>, r: Expression<'a>| add(l, r),
-            "-" => |l: Expression<'a>, r: Expression<'a>| subtract(l, r),
-            _ => unreachable!(),
-        }
+    let op = plus().or(minus()).map(|s| match s {
+        "+" => |l: Expression<'a>, r: Expression<'a>| add(l, r),
+        "-" => |l: Expression<'a>, r: Expression<'a>| subtract(l, r),
+        _ => unreachable!(),
     });
     chainl1(multitive(), op)
 }
@@ -350,7 +367,6 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    println!("token start");
     let tokens = choice! {
         attempt(lt_eq()),
         attempt(gt_eq()),
@@ -360,7 +376,6 @@ where
         attempt(gt())
     };
 
-    println!("op start");
     let op = tokens.map(|s| match s {
         "<" => |l: Expression<'a>, r: Expression<'a>| less_than(l, r),
         ">" => |l: Expression<'a>, r: Expression<'a>| greater_than(l, r),
@@ -392,6 +407,63 @@ parser! {
     }
 }
 
+fn line<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    expression_line()
+}
+
+fn expression_line<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    attempt(expression().then(|e| semi_colon().map(move |_| e.clone())))
+}
+
+fn block_expression<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    lbrace()
+        .then(|_| many(line()))
+        .then(|expr: Vec<Expression>| rbrace().map(move |_| block(expr.clone())))
+}
+
+fn assignment<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    ident().then(|name| {
+        eq().then(move |_| expression()).then(move |expr| {
+            // bit technically. :thinking_face:
+            let name = name.to_string();
+            semi_colon()
+                .map(move |_| crate::calculator::ast::assignment(name.to_string(), expr.clone()))
+        })
+    })
+}
+
 pub fn parse<'a>(source: &'a str) -> Program<'a> {
     let mut parser = expression();
     let parsed = parser.parse(source).unwrap();
@@ -410,7 +482,7 @@ mod test {
         parser::{comparative, multitive},
     };
 
-    use super::additive;
+    use super::{additive, assignment};
 
     #[test]
     fn test_add() {
@@ -514,5 +586,18 @@ mod test {
         let mut parser = comparative();
         let actual = parser.parse("2 != 1");
         assert_eq!((not_equal(integer(2), integer(1)), ""), actual.unwrap());
+    }
+
+    #[test]
+    fn test_assignment() {
+        let mut parser = assignment();
+        let actual = parser.parse("a = 1 + 2;");
+        assert_eq!(
+            (
+                crate::calculator::ast::assignment("a", add(integer(1), integer(2))),
+                ""
+            ),
+            actual.unwrap()
+        );
     }
 }

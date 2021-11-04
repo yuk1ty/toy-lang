@@ -8,3 +8,4 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.44"
 combine = "4.6.1"
+regex = "1.5.4"

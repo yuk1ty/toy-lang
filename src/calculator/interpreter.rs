@@ -13,7 +13,7 @@ struct FunctionDef<'a> {
 }
 
 pub struct Interpreter<'a> {
-    variable_environment: Environment<'a>,
+    variable_environment: Environment,
     function_environment: HashMap<&'a str, FunctionDef<'a>>,
 }
 
@@ -39,7 +39,7 @@ impl<'a> Interpreter<'a> {
                     self.variable_environment
                         .bindings
                         .borrow_mut()
-                        .insert(name, body);
+                        .insert(name.to_string(), body);
                 }
             }
         }
@@ -87,14 +87,14 @@ impl<'a> Interpreter<'a> {
                 .unwrap_or_else(|| panic!("Undefined variable: {}", ident)),
             Expression::Assignment { name, expression } => {
                 let value = self.interpret(*expression);
-                let bindings_opt = self.variable_environment.find_binding(name);
+                let bindings_opt = self.variable_environment.find_binding(&name);
                 match bindings_opt {
-                    Some(map) => map.borrow_mut().insert(name, value),
+                    Some(map) => map.borrow_mut().insert(name.to_string(), value),
                     None => self
                         .variable_environment
                         .bindings
                         .borrow_mut()
-                        .insert(name, value),
+                        .insert(name.to_string(), value),
                 };
                 value
             }
@@ -149,7 +149,7 @@ impl<'a> Interpreter<'a> {
 
                         for (i, formal_param_name) in fd_args.into_iter().enumerate() {
                             self.variable_environment.bindings.borrow_mut().insert(
-                                formal_param_name,
+                                formal_param_name.to_string(),
                                 *values
                                     .get(i)
                                     .unwrap_or_else(|| panic!("Value not found at index: {}", i)),
@@ -167,7 +167,7 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    fn new_enviromnent(next: Option<Box<Environment<'a>>>) -> Environment<'a> {
+    fn new_enviromnent(next: Option<Box<Environment>>) -> Environment {
         Environment::with_next(next)
     }
 }

@@ -84,9 +84,9 @@ pub fn integer<'a>(value: i32) -> Expression<'a> {
     Expression::IntegerLiteral(value)
 }
 
-pub fn assignment<'a>(name: &'a str, expression: Expression<'a>) -> Expression<'a> {
+pub fn assignment<'a>(name: impl Into<String>, expression: Expression<'a>) -> Expression<'a> {
     Expression::Assignment {
-        name,
+        name: name.into(),
         expression: Box::new(expression),
     }
 }
@@ -146,7 +146,7 @@ pub enum Expression<'a> {
     },
     IntegerLiteral(i32),
     Assignment {
-        name: &'a str,
+        name: String,
         expression: Box<Expression<'a>>,
     },
     Identifier(String),
@@ -193,15 +193,15 @@ impl<'p> Program<'p> {
     }
 }
 
-pub type Binding<'e> = Rc<RefCell<HashMap<&'e str, i32>>>;
+pub type Binding = Rc<RefCell<HashMap<String, i32>>>;
 
 #[derive(PartialEq, Clone, Debug)]
-pub struct Environment<'e> {
-    pub bindings: Binding<'e>,
-    next: Option<Box<Environment<'e>>>,
+pub struct Environment {
+    pub bindings: Binding,
+    next: Option<Box<Environment>>,
 }
 
-impl<'a> Environment<'a> {
+impl Environment {
     pub fn new() -> Self {
         Self {
             bindings: Rc::new(RefCell::new(HashMap::new())),
@@ -209,14 +209,14 @@ impl<'a> Environment<'a> {
         }
     }
 
-    pub fn with_next(next: Option<Box<Environment<'a>>>) -> Self {
+    pub fn with_next(next: Option<Box<Environment>>) -> Self {
         Self {
             bindings: Rc::new(RefCell::new(HashMap::new())),
             next,
         }
     }
 
-    pub fn find_binding(&self, name: &str) -> Option<Binding<'a>> {
+    pub fn find_binding(&self, name: &str) -> Option<Binding> {
         if self.bindings.borrow_mut().get(name).is_some() {
             return Some(self.bindings.clone());
         }
