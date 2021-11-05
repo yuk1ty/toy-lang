@@ -320,11 +320,10 @@ where
     >,
 {
     choice! {
-        attempt(lparen())
-            .with(expression().then(|v| rparen().map(move |_| v.clone()))),
+        attempt(lparen()).with(expression()).skip(rparen()).map(|expr| expr.clone()),
         integer(),
-        identifier(),
-        function_call()
+        function_call(),
+        identifier()
     }
 }
 
@@ -380,7 +379,7 @@ where
         attempt(gt())
     };
 
-    let op = tokens.map(|s| match s {
+    let op = attempt(tokens.map(|s| match s {
         "<" => |l: Expression, r: Expression| less_than(l, r),
         ">" => |l: Expression, r: Expression| greater_than(l, r),
         "<=" => |l: Expression, r: Expression| less_than_equal(l, r),
@@ -388,7 +387,7 @@ where
         "==" => |l: Expression, r: Expression| equal_equal(l, r),
         "!=" => |l: Expression, r: Expression| not_equal(l, r),
         _ => unreachable!(),
-    });
+    }));
 
     chainl1(additive(), op)
 }
@@ -444,7 +443,9 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    attempt(expression().then(|e| semi_colon().map(move |_| e.clone())))
+    attempt(expression())
+        .skip(semi_colon())
+        .map(|expr| expr.clone())
 }
 
 fn block_expression<'a, Input>() -> impl Parser<Input, Output = Expression>
@@ -471,14 +472,14 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    ident().then(|name| {
+    attempt(ident().then(|name| {
         eq().with(expression()).then(move |expr| {
             // bit technically. :thinking_face:
             let name = name.to_string();
             semi_colon()
                 .map(move |_| crate::calculator::ast::assignment(name.to_string(), expr.clone()))
         })
-    })
+    }))
 }
 
 fn if_expression<'a, Input>() -> impl Parser<Input, Output = Expression>
@@ -526,14 +527,14 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    ident().then(|name| {
+    attempt(ident().then(|name| {
         between(
             lparen(),
             rparen(),
             sep_by(expression().map(|expr| expr.extract_params()), comma()),
         )
         .map(move |exprs: Expressions| call(name.clone(), exprs.0))
-    })
+    }))
 }
 
 fn program<Input>() -> impl Parser<Input, Output = Program>
@@ -718,11 +719,19 @@ mod test {
     }
 
     #[test]
+    fn test_line() {
+        let mut parser = super::line();
+        let actual = parser.parse("i;");
+        actual.unwrap();
+    }
+
+    #[test]
     fn test_block() {
         let mut parser = block_expression();
         let actual = parser.parse(
             r#"
         {
+            i;
             i = 1;
             a = i * 2;
             b = a > i;
@@ -825,5 +834,25 @@ mod test {
         }"#,
         );
         println!("{:?}", actual.unwrap());
+    }
+
+    #[test]
+    fn test_program() {
+        let mut parser = super::program();
+        let actual = parser.parse(
+            r#"
+            define factorial(n) {
+                if (n < 2) {
+                    1;
+                } else {
+                    n * factorial(n - 1);
+                }
+            }
+            define main() {
+                factorial(5);
+            }
+        "#,
+        );
+        actual.unwrap();
     }
 }

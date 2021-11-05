@@ -167,6 +167,14 @@ impl Expression {
         fn create_vec(expr: Expression, exprs: &mut Vec<Expression>) {
             match expr {
                 e @ (Expression::IntegerLiteral(_) | Expression::Identifier(_)) => exprs.push(e),
+                e
+                @
+                Expression::BinaryExpression {
+                    operator: _,
+                    lhs: _,
+                    rhs: _,
+                } => exprs.push(e),
+                // 算術式を入れられる
                 _ => create_vec(expr, exprs),
             }
         }
