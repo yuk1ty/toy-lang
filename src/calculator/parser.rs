@@ -1,7 +1,7 @@
 use combine::{
     attempt, between, chainl1, choice, many, many1, optional, parser,
     parser::char::{alpha_num, digit, spaces, string},
-    ParseError, Parser, Stream, StreamOnce,
+    sep_by, ParseError, Parser, Stream, StreamOnce,
 };
 
 use crate::calculator::ast::*;
@@ -284,7 +284,7 @@ where
     many(alpha_num()).skip(spaces())
 }
 
-fn identifier<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+fn identifier<'a, Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     <Input as StreamOnce>::Error: ParseError<
@@ -296,7 +296,7 @@ where
     ident().map(|s| symbol(s))
 }
 
-fn integer<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+fn integer<'a, Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     <Input as StreamOnce>::Error: ParseError<
@@ -310,7 +310,7 @@ where
         .skip(spaces())
 }
 
-fn primary<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+fn primary<'a, Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     <Input as StreamOnce>::Error: ParseError<
@@ -325,7 +325,7 @@ where
         .or(identifier())
 }
 
-fn multitive<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+fn multitive<'a, Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     <Input as StreamOnce>::Error: ParseError<
@@ -335,14 +335,14 @@ where
     >,
 {
     let op = aster().or(slash()).map(|s| match s {
-        "*" => |l: Expression<'a>, r: Expression<'a>| multiply(l, r),
-        "/" => |l: Expression<'a>, r: Expression<'a>| divide(l, r),
+        "*" => |l: Expression, r: Expression| multiply(l, r),
+        "/" => |l: Expression, r: Expression| divide(l, r),
         _ => unreachable!(),
     });
     chainl1(primary(), op)
 }
 
-fn additive<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+fn additive<'a, Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     <Input as StreamOnce>::Error: ParseError<
@@ -352,14 +352,14 @@ where
     >,
 {
     let op = plus().or(minus()).map(|s| match s {
-        "+" => |l: Expression<'a>, r: Expression<'a>| add(l, r),
-        "-" => |l: Expression<'a>, r: Expression<'a>| subtract(l, r),
+        "+" => |l: Expression, r: Expression| add(l, r),
+        "-" => |l: Expression, r: Expression| subtract(l, r),
         _ => unreachable!(),
     });
     chainl1(multitive(), op)
 }
 
-fn comparative<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+fn comparative<'a, Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     <Input as StreamOnce>::Error: ParseError<
@@ -378,19 +378,19 @@ where
     };
 
     let op = tokens.map(|s| match s {
-        "<" => |l: Expression<'a>, r: Expression<'a>| less_than(l, r),
-        ">" => |l: Expression<'a>, r: Expression<'a>| greater_than(l, r),
-        "<=" => |l: Expression<'a>, r: Expression<'a>| less_than_equal(l, r),
-        ">=" => |l: Expression<'a>, r: Expression<'a>| greater_than_equal(l, r),
-        "==" => |l: Expression<'a>, r: Expression<'a>| equal_equal(l, r),
-        "!=" => |l: Expression<'a>, r: Expression<'a>| not_equal(l, r),
+        "<" => |l: Expression, r: Expression| less_than(l, r),
+        ">" => |l: Expression, r: Expression| greater_than(l, r),
+        "<=" => |l: Expression, r: Expression| less_than_equal(l, r),
+        ">=" => |l: Expression, r: Expression| greater_than_equal(l, r),
+        "==" => |l: Expression, r: Expression| equal_equal(l, r),
+        "!=" => |l: Expression, r: Expression| not_equal(l, r),
         _ => unreachable!(),
     });
 
     chainl1(additive(), op)
 }
 
-fn expression_<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+fn expression_<'a, Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     <Input as StreamOnce>::Error: ParseError<
@@ -403,12 +403,12 @@ where
 }
 
 parser! {
-    fn expression['a, Input]()(Input) -> Expression<'a> where [ Input: Stream<Token = char> ] {
+    fn expression[Input]()(Input) -> Expression where [ Input: Stream<Token = char> ] {
         expression_()
     }
 }
 
-fn line_<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+fn line_<'a, Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     <Input as StreamOnce>::Error: ParseError<
@@ -427,12 +427,12 @@ where
 }
 
 parser! {
-    fn line['a, Input]()(Input) -> Expression<'a> where [ Input: Stream<Token = char> ] {
+    fn line[Input]()(Input) -> Expression where [ Input: Stream<Token = char> ] {
         line_()
     }
 }
 
-fn expression_line<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+fn expression_line<'a, Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     <Input as StreamOnce>::Error: ParseError<
@@ -444,7 +444,7 @@ where
     attempt(expression().then(|e| semi_colon().map(move |_| e.clone())))
 }
 
-fn block_expression<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+fn block_expression<'a, Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     <Input as StreamOnce>::Error: ParseError<
@@ -458,7 +458,7 @@ where
         .then(|expr: Vec<Expression>| rbrace().map(move |_| block(expr.clone())))
 }
 
-fn assignment<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+fn assignment<'a, Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     <Input as StreamOnce>::Error: ParseError<
@@ -477,7 +477,7 @@ where
     })
 }
 
-fn if_expression<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+fn if_expression<'a, Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     <Input as StreamOnce>::Error: ParseError<
@@ -497,7 +497,7 @@ where
     }))
 }
 
-fn while_expression<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
+fn while_expression<'a, Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     <Input as StreamOnce>::Error: ParseError<
@@ -513,7 +513,7 @@ where
     )
 }
 
-pub fn parse<'a>(source: &'a str) -> Program<'a> {
+pub fn parse<'a>(source: &'a str) -> Program {
     let mut parser = expression();
     let parsed = parser.parse(source).unwrap();
     Program::new(Vec::new())

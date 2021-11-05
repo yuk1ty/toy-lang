@@ -6,18 +6,18 @@ use super::ast::{Environment, Program, TopLevel};
 
 /// Bureaucrat type to hold FunctionDefinition values.
 #[derive(PartialEq, Clone, Debug)]
-struct FunctionDef<'a> {
-    name: &'a str,
-    args: Vec<&'a str>,
-    body: Box<Expression<'a>>,
+struct FunctionDef {
+    name: String,
+    args: Vec<String>,
+    body: Box<Expression>,
 }
 
-pub struct Interpreter<'a> {
+pub struct Interpreter {
     variable_environment: Environment,
-    function_environment: HashMap<&'a str, FunctionDef<'a>>,
+    function_environment: HashMap<String, FunctionDef>,
 }
 
-impl<'a> Interpreter<'a> {
+impl Interpreter {
     pub fn new() -> Self {
         Self {
             variable_environment: Environment::new(),
@@ -25,14 +25,14 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn call_main(&mut self, program: Program<'a>) -> i32 {
+    pub fn call_main(&mut self, program: Program) -> i32 {
         let top_levels = program.definitions();
         for top_level in top_levels {
             match top_level {
                 TopLevel::FunctionDefinition { name, args, body } => {
                     self.function_environment
                         // To avoid using unstable feature (#65490)
-                        .insert(name, FunctionDef { name, args, body });
+                        .insert(name.clone(), FunctionDef { name, args, body });
                 }
                 TopLevel::GlobalVariableDefinition { name, expression } => {
                     let body = self.interpret(*expression);
@@ -57,7 +57,7 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    fn interpret(&mut self, expression: Expression<'a>) -> i32 {
+    fn interpret(&mut self, expression: Expression) -> i32 {
         match expression {
             Expression::BinaryExpression { operator, lhs, rhs } => {
                 let lhs = self.interpret(*lhs);
@@ -130,7 +130,7 @@ impl<'a> Interpreter<'a> {
                 value
             }
             Expression::FunctionCall { name, args } => {
-                let definition = self.function_environment.get(name).cloned();
+                let definition = self.function_environment.get(name.as_str()).cloned();
                 match definition {
                     Some(def) => {
                         let FunctionDef {
@@ -177,7 +177,7 @@ mod test {
     use super::*;
     use crate::calculator::ast::*;
 
-    fn interpreter<'a>() -> Interpreter<'a> {
+    fn interpreter() -> Interpreter {
         Interpreter::new()
     }
 
@@ -322,7 +322,7 @@ mod test {
             define_function("main", vec![], block(vec![call("fact", vec![integer(5)])])),
             define_function(
                 "fact",
-                vec!["n"],
+                vec!["n".to_string()],
                 block(vec![r#if(
                     less_than(symbol("n"), integer(2)),
                     integer(1),

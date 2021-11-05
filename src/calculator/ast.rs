@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, fmt::Debug, rc::Rc};
 
-pub fn add<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+pub fn add<'a>(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::Add,
         lhs: Box::new(lhs),
@@ -8,7 +8,7 @@ pub fn add<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
     }
 }
 
-pub fn subtract<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+pub fn subtract<'a>(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::Subtract,
         lhs: Box::new(lhs),
@@ -16,7 +16,7 @@ pub fn subtract<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> 
     }
 }
 
-pub fn multiply<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+pub fn multiply<'a>(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::Multiply,
         lhs: Box::new(lhs),
@@ -24,7 +24,7 @@ pub fn multiply<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> 
     }
 }
 
-pub fn divide<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+pub fn divide<'a>(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::Divide,
         lhs: Box::new(lhs),
@@ -32,7 +32,7 @@ pub fn divide<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
     }
 }
 
-pub fn less_than<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+pub fn less_than<'a>(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::LessThan,
         lhs: Box::new(lhs),
@@ -40,7 +40,7 @@ pub fn less_than<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a>
     }
 }
 
-pub fn greater_than<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+pub fn greater_than<'a>(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::GreaterThan,
         lhs: Box::new(lhs),
@@ -48,7 +48,7 @@ pub fn greater_than<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<
     }
 }
 
-pub fn less_than_equal<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+pub fn less_than_equal<'a>(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::LessThanEqual,
         lhs: Box::new(lhs),
@@ -56,7 +56,7 @@ pub fn less_than_equal<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expressi
     }
 }
 
-pub fn greater_than_equal<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+pub fn greater_than_equal<'a>(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::GreaterThanEqual,
         lhs: Box::new(lhs),
@@ -64,7 +64,7 @@ pub fn greater_than_equal<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expre
     }
 }
 
-pub fn equal_equal<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+pub fn equal_equal<'a>(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::EqualEqual,
         lhs: Box::new(lhs),
@@ -72,7 +72,7 @@ pub fn equal_equal<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'
     }
 }
 
-pub fn not_equal<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a> {
+pub fn not_equal<'a>(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::NotEqual,
         lhs: Box::new(lhs),
@@ -80,26 +80,26 @@ pub fn not_equal<'a>(lhs: Expression<'a>, rhs: Expression<'a>) -> Expression<'a>
     }
 }
 
-pub fn integer<'a>(value: i32) -> Expression<'a> {
+pub fn integer<'a>(value: i32) -> Expression {
     Expression::IntegerLiteral(value)
 }
 
-pub fn assignment<'a>(name: impl Into<String>, expression: Expression<'a>) -> Expression<'a> {
+pub fn assignment<'a>(name: impl Into<String>, expression: Expression) -> Expression {
     Expression::Assignment {
         name: name.into(),
         expression: Box::new(expression),
     }
 }
 
-pub fn symbol<'a>(name: impl Into<String>) -> Expression<'a> {
+pub fn symbol<'a>(name: impl Into<String>) -> Expression {
     Expression::Identifier(name.into())
 }
 
 pub fn r#if<'a>(
-    condition: Expression<'a>,
-    then_clause: Expression<'a>,
-    else_clause: Option<Expression<'a>>,
-) -> Expression<'a> {
+    condition: Expression,
+    then_clause: Expression,
+    else_clause: Option<Expression>,
+) -> Expression {
     Expression::IfExpression {
         condition: Box::new(condition),
         then_clause: Box::new(then_clause),
@@ -107,7 +107,7 @@ pub fn r#if<'a>(
     }
 }
 
-pub fn r#while<'a>(condition: Expression<'a>, body: Expression<'a>) -> Expression<'a> {
+pub fn r#while<'a>(condition: Expression, body: Expression) -> Expression {
     Expression::WhileExpression {
         condition: Box::new(condition),
         body: Box::new(body),
@@ -118,77 +118,95 @@ pub fn block(expression: Vec<Expression>) -> Expression {
     Expression::BlockExpression(expression)
 }
 
-pub fn call<'a>(name: &'a str, elements: Vec<Expression<'a>>) -> Expression<'a> {
+pub fn call<'a>(name: impl Into<String>, elements: Vec<Expression>) -> Expression {
     Expression::FunctionCall {
-        name,
+        name: name.into(),
         args: elements,
     }
 }
 
-pub fn define_function<'a>(
-    name: &'a str,
-    args: Vec<&'a str>,
-    body: Expression<'a>,
-) -> TopLevel<'a> {
+pub fn define_function(name: impl Into<String>, args: Vec<String>, body: Expression) -> TopLevel {
     TopLevel::FunctionDefinition {
-        name,
+        name: name.into(),
         args,
         body: Box::new(body),
     }
 }
 
 #[derive(PartialEq, Clone, Debug)]
-pub enum Expression<'a> {
+pub enum Expression {
     BinaryExpression {
         operator: Operator,
-        lhs: Box<Expression<'a>>,
-        rhs: Box<Expression<'a>>,
+        lhs: Box<Expression>,
+        rhs: Box<Expression>,
     },
     IntegerLiteral(i32),
     Assignment {
         name: String,
-        expression: Box<Expression<'a>>,
+        expression: Box<Expression>,
     },
     Identifier(String),
     IfExpression {
-        condition: Box<Expression<'a>>,
-        then_clause: Box<Expression<'a>>,
-        else_clause: Option<Box<Expression<'a>>>,
+        condition: Box<Expression>,
+        then_clause: Box<Expression>,
+        else_clause: Option<Box<Expression>>,
     },
     WhileExpression {
-        condition: Box<Expression<'a>>,
-        body: Box<Expression<'a>>,
+        condition: Box<Expression>,
+        body: Box<Expression>,
     },
-    BlockExpression(Vec<Expression<'a>>),
+    BlockExpression(Vec<Expression>),
     FunctionCall {
-        name: &'a str,
-        args: Vec<Expression<'a>>,
+        name: String,
+        args: Vec<Expression>,
     },
 }
 
+impl Expression {
+    pub fn to_vec(self) -> Expressions {
+        Expressions(vec![])
+    }
+}
+
+pub struct Expressions(Vec<Expression>);
+
+impl Default for Expressions {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
+
+impl Extend<Expression> for Expressions {
+    fn extend<T: IntoIterator<Item = Expression>>(&mut self, iter: T) {
+        for elem in iter {
+            self.0.push(elem);
+        }
+    }
+}
+
 #[derive(PartialEq, Clone, Debug)]
-pub enum TopLevel<'t> {
+pub enum TopLevel {
     // To avoid using unstable feature (#65490)
     FunctionDefinition {
-        name: &'t str,
-        args: Vec<&'t str>,
-        body: Box<Expression<'t>>,
+        name: String,
+        args: Vec<String>,
+        body: Box<Expression>,
     },
     GlobalVariableDefinition {
-        name: &'t str,
-        expression: Box<Expression<'t>>,
+        name: String,
+        expression: Box<Expression>,
     },
 }
 
 #[derive(PartialEq, Clone, Debug)]
-pub struct Program<'p>(Vec<TopLevel<'p>>);
+pub struct Program(Vec<TopLevel>);
 
-impl<'p> Program<'p> {
-    pub fn new(top_levels: Vec<TopLevel<'p>>) -> Self {
+impl Program {
+    pub fn new(top_levels: Vec<TopLevel>) -> Self {
         Program(top_levels)
     }
 
-    pub fn definitions(self) -> Vec<TopLevel<'p>> {
+    pub fn definitions(self) -> Vec<TopLevel> {
         self.0
     }
 }
