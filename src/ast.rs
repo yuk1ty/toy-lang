@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, fmt::Debug, rc::Rc};
 
-pub fn add<'a>(lhs: Expression, rhs: Expression) -> Expression {
+pub fn add(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::Add,
         lhs: Box::new(lhs),
@@ -8,7 +8,7 @@ pub fn add<'a>(lhs: Expression, rhs: Expression) -> Expression {
     }
 }
 
-pub fn subtract<'a>(lhs: Expression, rhs: Expression) -> Expression {
+pub fn subtract(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::Subtract,
         lhs: Box::new(lhs),
@@ -16,7 +16,7 @@ pub fn subtract<'a>(lhs: Expression, rhs: Expression) -> Expression {
     }
 }
 
-pub fn multiply<'a>(lhs: Expression, rhs: Expression) -> Expression {
+pub fn multiply(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::Multiply,
         lhs: Box::new(lhs),
@@ -24,7 +24,7 @@ pub fn multiply<'a>(lhs: Expression, rhs: Expression) -> Expression {
     }
 }
 
-pub fn divide<'a>(lhs: Expression, rhs: Expression) -> Expression {
+pub fn divide(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::Divide,
         lhs: Box::new(lhs),
@@ -32,7 +32,7 @@ pub fn divide<'a>(lhs: Expression, rhs: Expression) -> Expression {
     }
 }
 
-pub fn less_than<'a>(lhs: Expression, rhs: Expression) -> Expression {
+pub fn less_than(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::LessThan,
         lhs: Box::new(lhs),
@@ -40,7 +40,7 @@ pub fn less_than<'a>(lhs: Expression, rhs: Expression) -> Expression {
     }
 }
 
-pub fn greater_than<'a>(lhs: Expression, rhs: Expression) -> Expression {
+pub fn greater_than(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::GreaterThan,
         lhs: Box::new(lhs),
@@ -48,7 +48,7 @@ pub fn greater_than<'a>(lhs: Expression, rhs: Expression) -> Expression {
     }
 }
 
-pub fn less_than_equal<'a>(lhs: Expression, rhs: Expression) -> Expression {
+pub fn less_than_equal(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::LessThanEqual,
         lhs: Box::new(lhs),
@@ -56,7 +56,7 @@ pub fn less_than_equal<'a>(lhs: Expression, rhs: Expression) -> Expression {
     }
 }
 
-pub fn greater_than_equal<'a>(lhs: Expression, rhs: Expression) -> Expression {
+pub fn greater_than_equal(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::GreaterThanEqual,
         lhs: Box::new(lhs),
@@ -64,7 +64,7 @@ pub fn greater_than_equal<'a>(lhs: Expression, rhs: Expression) -> Expression {
     }
 }
 
-pub fn equal_equal<'a>(lhs: Expression, rhs: Expression) -> Expression {
+pub fn equal_equal(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::EqualEqual,
         lhs: Box::new(lhs),
@@ -72,7 +72,7 @@ pub fn equal_equal<'a>(lhs: Expression, rhs: Expression) -> Expression {
     }
 }
 
-pub fn not_equal<'a>(lhs: Expression, rhs: Expression) -> Expression {
+pub fn not_equal(lhs: Expression, rhs: Expression) -> Expression {
     Expression::BinaryExpression {
         operator: Operator::NotEqual,
         lhs: Box::new(lhs),
@@ -80,22 +80,22 @@ pub fn not_equal<'a>(lhs: Expression, rhs: Expression) -> Expression {
     }
 }
 
-pub fn integer<'a>(value: i32) -> Expression {
+pub fn integer(value: i32) -> Expression {
     Expression::IntegerLiteral(value)
 }
 
-pub fn assignment<'a>(name: impl Into<String>, expression: Expression) -> Expression {
+pub fn assignment(name: impl Into<String>, expression: Expression) -> Expression {
     Expression::Assignment {
         name: name.into(),
         expression: Box::new(expression),
     }
 }
 
-pub fn symbol<'a>(name: impl Into<String>) -> Expression {
+pub fn symbol(name: impl Into<String>) -> Expression {
     Expression::Identifier(name.into())
 }
 
-pub fn r#if<'a>(
+pub fn r#if(
     condition: Expression,
     then_clause: Expression,
     else_clause: Option<Expression>,
@@ -107,7 +107,7 @@ pub fn r#if<'a>(
     }
 }
 
-pub fn r#while<'a>(condition: Expression, body: Expression) -> Expression {
+pub fn r#while(condition: Expression, body: Expression) -> Expression {
     Expression::WhileExpression {
         condition: Box::new(condition),
         body: Box::new(body),
@@ -118,7 +118,7 @@ pub fn block(expression: Vec<Expression>) -> Expression {
     Expression::BlockExpression(expression)
 }
 
-pub fn call<'a>(name: impl Into<String>, elements: Vec<Expression>) -> Expression {
+pub fn call(name: impl Into<String>, elements: Vec<Expression>) -> Expression {
     Expression::FunctionCall {
         name: name.into(),
         args: elements,

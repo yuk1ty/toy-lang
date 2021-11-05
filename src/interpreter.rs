@@ -89,12 +89,12 @@ impl Interpreter {
                 let value = self.interpret(*expression);
                 let bindings_opt = self.variable_environment.find_binding(&name);
                 match bindings_opt {
-                    Some(map) => map.borrow_mut().insert(name.to_string(), value),
+                    Some(map) => map.borrow_mut().insert(name, value),
                     None => self
                         .variable_environment
                         .bindings
                         .borrow_mut()
-                        .insert(name.to_string(), value),
+                        .insert(name, value),
                 };
                 value
             }
