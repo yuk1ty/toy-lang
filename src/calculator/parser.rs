@@ -458,7 +458,8 @@ where
 {
     lbrace()
         .with(many(line()))
-        .then(|expr: Vec<Expression>| rbrace().map(move |_| block(expr.clone())))
+        .skip(rbrace())
+        .map(|expr: Vec<Expression>| block(expr.clone()))
 }
 
 fn assignment<'a, Input>() -> impl Parser<Input, Output = Expression>
@@ -535,10 +536,54 @@ where
     })
 }
 
+fn program<Input>() -> impl Parser<Input, Output = Program>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    spaces()
+        .with(many(top_level_definition()))
+        .map(|top: Vec<TopLevel>| Program::new(top))
+}
+
+fn top_level_definition<Input>() -> impl Parser<Input, Output = TopLevel>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    function_definition()
+}
+
+fn function_definition<Input>() -> impl Parser<Input, Output = TopLevel>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    let def_name = define().with(ident());
+    def_name.then(|name| {
+        between(lparen(), rparen(), sep_by(ident(), comma())).then(move |args: Vec<String>| {
+            let name = name.clone();
+            block_expression().map(move |body| define_function(name.clone(), args.clone(), body))
+        })
+    })
+}
+
 pub fn parse<'a>(source: &'a str) -> Program {
-    let mut parser = expression();
-    let parsed = parser.parse(source).unwrap();
-    Program::new(Vec::new())
+    let mut parser = program();
+    // TODO error handling
+    parser.parse(source).unwrap().0
 }
 
 #[cfg(test)]
@@ -768,5 +813,17 @@ mod test {
             actual.unwrap(),
             (Expression::FunctionCall { name: _, args: _ }, "")
         ));
+    }
+
+    #[test]
+    fn test_function_definition() {
+        let mut parser = super::function_definition();
+        let actual = parser.parse(
+            r#"
+        define hello(a, b) { 
+            result = a + b; 
+        }"#,
+        );
+        println!("{:?}", actual.unwrap());
     }
 }
