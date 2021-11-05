@@ -293,7 +293,7 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    ident().map(|s| symbol(s))
+    ident().map(symbol)
 }
 
 fn integer<Input>() -> impl Parser<Input, Output = Expression>
@@ -320,7 +320,7 @@ where
     >,
 {
     choice! {
-        attempt(lparen()).with(expression()).skip(rparen()).map(|expr| expr.clone()),
+        attempt(lparen()).with(expression()).skip(rparen()),
         integer(),
         function_call(),
         identifier()
@@ -443,9 +443,7 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    attempt(expression())
-        .skip(semi_colon())
-        .map(|expr| expr.clone())
+    attempt(expression()).skip(semi_colon())
 }
 
 fn block_expression<Input>() -> impl Parser<Input, Output = Expression>
@@ -457,10 +455,7 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    lbrace()
-        .with(many(line()))
-        .skip(rbrace())
-        .map(|expr: Vec<Expression>| block(expr.clone()))
+    lbrace().with(many(line())).skip(rbrace()).map(block)
 }
 
 fn assignment<Input>() -> impl Parser<Input, Output = Expression>
@@ -544,7 +539,7 @@ where
 {
     spaces()
         .with(many(top_level_definition()))
-        .map(|top: Vec<TopLevel>| Program::new(top))
+        .map(Program::new)
 }
 
 fn top_level_definition<Input>() -> impl Parser<Input, Output = TopLevel>
@@ -577,7 +572,7 @@ where
     })
 }
 
-pub fn parse<'a>(source: &'a str) -> Program {
+pub fn parse(source: &str) -> Program {
     let mut parser = program();
     // TODO error handling
     parser.parse(source).unwrap().0
