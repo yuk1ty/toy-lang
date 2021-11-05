@@ -4,7 +4,7 @@ use combine::{
     sep_by, ParseError, Parser, Stream, StreamOnce,
 };
 
-use crate::calculator::ast::*;
+use crate::ast::*;
 
 use super::ast::Program;
 
@@ -306,7 +306,7 @@ where
     >,
 {
     many1(digit())
-        .map(|d: String| crate::calculator::ast::integer(d.parse().unwrap()))
+        .map(|d: String| crate::ast::integer(d.parse().unwrap()))
         .skip(spaces())
 }
 
@@ -476,8 +476,7 @@ where
         eq().with(expression()).then(move |expr| {
             // bit technically. :thinking_face:
             let name = name.to_string();
-            semi_colon()
-                .map(move |_| crate::calculator::ast::assignment(name.to_string(), expr.clone()))
+            semi_colon().map(move |_| crate::ast::assignment(name.to_string(), expr.clone()))
         })
     }))
 }
@@ -496,7 +495,7 @@ where
         line().then(move |then_clause| {
             let c = c.clone();
             optional(r#else().with(line())).map(move |else_clause| {
-                crate::calculator::ast::r#if(c.clone(), then_clause.clone(), else_clause)
+                crate::ast::r#if(c.clone(), then_clause.clone(), else_clause)
             })
         })
     }))
@@ -512,10 +511,7 @@ where
     >,
 {
     let condition = r#while().with(between(lparen(), rparen(), expression()));
-    attempt(
-        condition
-            .then(|c| line().map(move |body| crate::calculator::ast::r#while(c.clone(), body))),
-    )
+    attempt(condition.then(|c| line().map(move |body| crate::ast::r#while(c.clone(), body))))
 }
 
 fn function_call<Input>() -> impl Parser<Input, Output = Expression>
@@ -591,7 +587,7 @@ pub fn parse<'a>(source: &'a str) -> Program {
 mod test {
     use combine::Parser;
 
-    use crate::calculator::{
+    use crate::{
         ast::{
             add, divide, equal_equal, greater_than, greater_than_equal, integer, less_than,
             less_than_equal, multiply, not_equal, subtract, Expression,
@@ -710,10 +706,7 @@ mod test {
         let mut parser = assignment();
         let actual = parser.parse("a = 1 + 2;");
         assert_eq!(
-            (
-                crate::calculator::ast::assignment("a", add(integer(1), integer(2))),
-                ""
-            ),
+            (crate::ast::assignment("a", add(integer(1), integer(2))), ""),
             actual.unwrap()
         );
     }

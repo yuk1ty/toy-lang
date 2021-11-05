@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use toy_lang::calculator::{interpreter::Interpreter, parser};
+use toy_lang::{interpreter::Interpreter, parser};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();

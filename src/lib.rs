@@ -1,1 +1,3 @@
-pub mod calculator;
+mod ast;
+pub mod interpreter;
+pub mod parser;

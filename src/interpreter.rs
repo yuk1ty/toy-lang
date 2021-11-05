@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::calculator::ast::{Expression, Operator};
+use crate::ast::{Expression, Operator};
 
 use super::ast::{Environment, Program, TopLevel};
 
@@ -175,7 +175,7 @@ impl Interpreter {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::calculator::ast::*;
+    use crate::ast::*;
 
     fn interpreter() -> Interpreter {
         Interpreter::new()
