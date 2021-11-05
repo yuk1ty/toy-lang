@@ -1,5 +1,5 @@
 use combine::{
-    attempt, between, chainl1, choice, many, many1, parser,
+    attempt, between, chainl1, choice, many, many1, optional, parser,
     parser::char::{alpha_num, digit, spaces, string},
     ParseError, Parser, Stream, StreamOnce,
 };
@@ -487,12 +487,14 @@ where
     >,
 {
     let condition = r#if().with(between(lparen(), rparen(), expression()));
-    // TODO else clause
-    attempt(
-        condition.then(|c| {
-            line().map(move |clause| crate::calculator::ast::r#if(c.clone(), clause, None))
-        }),
-    )
+    attempt(condition.then(|c| {
+        line().then(move |then_clause| {
+            let c = c.clone();
+            optional(r#else().with(line())).map(move |else_clause| {
+                crate::calculator::ast::r#if(c.clone(), then_clause.clone(), else_clause)
+            })
+        })
+    }))
 }
 
 fn while_expression<'a, Input>() -> impl Parser<Input, Output = Expression<'a>>
@@ -529,7 +531,7 @@ mod test {
         parser::{comparative, multitive},
     };
 
-    use super::{additive, assignment, block_expression, while_expression};
+    use super::{additive, assignment, block_expression, if_expression, while_expression};
 
     #[test]
     fn test_add() {
@@ -662,6 +664,54 @@ mod test {
         assert!(matches!(
             actual.unwrap(),
             (Expression::BlockExpression(_), "")
+        ));
+    }
+
+    #[test]
+    fn test_if_expression_without_else() {
+        let mut parser = if_expression();
+        let actual = parser.parse(
+            r#"
+            if (i == 0) {
+                i = i + 1;
+            }
+        "#,
+        );
+        assert!(matches!(
+            actual.unwrap(),
+            (
+                Expression::IfExpression {
+                    condition: _,
+                    then_clause: _,
+                    else_clause: None
+                },
+                ""
+            )
+        ));
+    }
+
+    #[test]
+    fn test_if_expression_with_else() {
+        let mut parser = if_expression();
+        let actual = parser.parse(
+            r#"
+            if (i == 0) {
+                i = i + 1;
+            } else {
+                i = i + 2;
+            }
+        "#,
+        );
+        assert!(matches!(
+            actual.unwrap(),
+            (
+                Expression::IfExpression {
+                    condition: _,
+                    then_clause: _,
+                    else_clause: Some(_)
+                },
+                ""
+            )
         ));
     }
 
