@@ -13,8 +13,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         let program = parser::parse(source.as_str());
         let mut interpreter = Interpreter::new();
         let result = interpreter.call_main(program);
-        Ok(println!("{}", result))
+        println!("{}", result);
     } else {
-        Ok(eprintln!("Example: toy run ./source/factorial.toy"))
+        eprintln!("Example: toy run ./source/factorial.toy");
     }
+
+    Ok(())
 }

@@ -1,3 +1,5 @@
+#![allow(clippy::new_without_default)]
+
 use std::collections::HashMap;
 
 use crate::ast::{Expression, Operator};
