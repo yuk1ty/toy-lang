@@ -319,10 +319,13 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    attempt(lparen())
-        .with(expression().then(|v| rparen().map(move |_| v.clone())))
-        .or(integer())
-        .or(identifier())
+    choice! {
+        attempt(lparen())
+            .with(expression().then(|v| rparen().map(move |_| v.clone()))),
+        integer(),
+        identifier(),
+        function_call()
+    }
 }
 
 fn multitive<'a, Input>() -> impl Parser<Input, Output = Expression>
@@ -511,6 +514,25 @@ where
         condition
             .then(|c| line().map(move |body| crate::calculator::ast::r#while(c.clone(), body))),
     )
+}
+
+fn function_call<Input>() -> impl Parser<Input, Output = Expression>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    ident().then(|name| {
+        between(
+            lparen(),
+            rparen(),
+            sep_by(expression().map(|expr| expr.extract_params()), comma()),
+        )
+        .map(move |exprs: Expressions| call(name.clone(), exprs.0))
+    })
 }
 
 pub fn parse<'a>(source: &'a str) -> Program {
@@ -726,6 +748,25 @@ mod test {
             }
         "#,
         );
-        println!("{:?}", actual.unwrap());
+        assert!(matches!(
+            actual.unwrap(),
+            (
+                Expression::WhileExpression {
+                    condition: _,
+                    body: _
+                },
+                ""
+            )
+        ));
+    }
+
+    #[test]
+    fn test_function_call() {
+        let mut parser = super::function_call();
+        let actual = parser.parse("add(1, 2, 3)");
+        assert!(matches!(
+            actual.unwrap(),
+            (Expression::FunctionCall { name: _, args: _ }, "")
+        ));
     }
 }

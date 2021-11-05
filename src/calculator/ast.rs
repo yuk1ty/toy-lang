@@ -163,12 +163,20 @@ pub enum Expression {
 }
 
 impl Expression {
-    pub fn to_vec(self) -> Expressions {
-        Expressions(vec![])
+    pub fn extract_params(self) -> Expressions {
+        fn create_vec(expr: Expression, exprs: &mut Vec<Expression>) {
+            match expr {
+                e @ (Expression::IntegerLiteral(_) | Expression::Identifier(_)) => exprs.push(e),
+                _ => create_vec(expr, exprs),
+            }
+        }
+        let mut exprs = Vec::new();
+        create_vec(self, &mut exprs);
+        Expressions(exprs)
     }
 }
 
-pub struct Expressions(Vec<Expression>);
+pub struct Expressions(pub Vec<Expression>);
 
 impl Default for Expressions {
     fn default() -> Self {
@@ -180,6 +188,17 @@ impl Extend<Expression> for Expressions {
     fn extend<T: IntoIterator<Item = Expression>>(&mut self, iter: T) {
         for elem in iter {
             self.0.push(elem);
+        }
+    }
+}
+
+impl Extend<Expressions> for Expressions {
+    fn extend<T: IntoIterator<Item = Expressions>>(&mut self, iter: T) {
+        // slow...?
+        for elem in iter {
+            for elem in elem.0 {
+                self.0.push(elem);
+            }
         }
     }
 }
