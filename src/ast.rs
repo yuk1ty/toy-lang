@@ -174,7 +174,6 @@ impl Expression {
                     lhs: _,
                     rhs: _,
                 } => exprs.push(e),
-                // 算術式を入れられる
                 _ => create_vec(expr, exprs),
             }
         }
@@ -202,18 +201,14 @@ impl Extend<Expression> for Expressions {
 
 impl Extend<Expressions> for Expressions {
     fn extend<T: IntoIterator<Item = Expressions>>(&mut self, iter: T) {
-        // slow...?
         for elem in iter {
-            for elem in elem.0 {
-                self.0.push(elem);
-            }
+            self.0.extend(elem.0)
         }
     }
 }
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum TopLevel {
-    // To avoid using unstable feature (#65490)
     FunctionDefinition {
         name: String,
         args: Vec<String>,
