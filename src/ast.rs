@@ -1,6 +1,5 @@
 #![allow(clippy::enum_variant_names)]
 
-use anyhow::{anyhow, Result};
 use std::{cell::RefCell, collections::HashMap, fmt::Debug, rc::Rc};
 
 pub fn add(lhs: Expression, rhs: Expression) -> Expression {

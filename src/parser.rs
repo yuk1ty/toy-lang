@@ -808,12 +808,60 @@ mod test {
 
     #[test]
     fn test_function_call() {
+        // simple function call
         let mut parser = super::function_call();
         let actual = parser.parse("add(1, 2, 3)");
         assert!(matches!(
             actual.unwrap(),
             (Expression::FunctionCall { name: _, args: _ }, "")
         ));
+
+        let mut parser = super::function_call();
+        let actual = parser.parse("add(a, b)");
+        assert!(matches!(
+            actual.unwrap(),
+            (Expression::FunctionCall { name: _, args: _ }, "")
+        ));
+
+        // function call with binary expression
+        let mut parser = super::function_call();
+        let actual = parser.parse("add(1 * 2, 3 - 2)");
+        assert!(matches!(
+            actual.unwrap(),
+            (Expression::FunctionCall { name: _, args: _ }, "")
+        ));
+
+        // function call with piling function
+        let mut parser = super::function_call();
+        let actual = parser.parse("add(add(1, 2), 3)");
+        assert!(matches!(
+            actual.unwrap(),
+            (Expression::FunctionCall { name: _, args: _ }, "")
+        ));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_function_call_check_disable_while() {
+        let mut parser = super::function_call();
+        let actual = parser.parse("add(while (i > 0) { i; })");
+        actual.unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_function_call_check_disable_if() {
+        let mut parser = super::function_call();
+        let actual = parser.parse("add(if (n > 1) { 1; } else { 0; })");
+        actual.unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_function_call_check_disable_assignment() {
+        let mut parser = super::function_call();
+        let actual = parser.parse("add(n = 1)");
+        actual.unwrap();
     }
 
     #[test]
