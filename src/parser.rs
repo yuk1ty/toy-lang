@@ -552,7 +552,10 @@ where
         <Input as StreamOnce>::Position,
     >,
 {
-    function_definition()
+    choice! {
+        global_variable_definition(),
+        function_definition()
+    }
 }
 
 fn function_definition<Input>() -> impl Parser<Input, Output = TopLevel>
@@ -570,6 +573,22 @@ where
             let name = name.clone();
             block_expression().map(move |body| define_function(name.clone(), args.clone(), body))
         })
+    })
+}
+
+fn global_variable_definition<Input>() -> impl Parser<Input, Output = TopLevel>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    global().with(ident()).then(|name| {
+        eq().with(expression())
+            .skip(semi_colon())
+            .map(move |expression| global_definition(&name, expression))
     })
 }
 

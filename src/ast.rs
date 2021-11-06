@@ -135,6 +135,13 @@ pub fn define_function(name: impl Into<String>, args: Vec<String>, body: Express
     }
 }
 
+pub fn global_definition(name: impl Into<String>, expression: Expression) -> TopLevel {
+    TopLevel::GlobalVariableDefinition {
+        name: name.into(),
+        expression: Box::new(expression),
+    }
+}
+
 #[derive(PartialEq, Clone, Debug)]
 pub enum Expression {
     BinaryExpression {
