@@ -585,6 +585,7 @@ pub fn parse(source: &str) -> Result<Program> {
 #[cfg(test)]
 mod test {
     use combine::Parser;
+    use test_case::test_case;
 
     use crate::{
         ast::{
@@ -786,7 +787,6 @@ mod test {
     #[test]
     fn test_while() {
         let mut parser = while_expression();
-        // TODO now failing
         let actual = parser.parse(
             r#"
             while (i < 10) {
@@ -806,61 +806,25 @@ mod test {
         ));
     }
 
-    #[test]
-    fn test_function_call() {
-        // simple function call
-        let mut parser = super::function_call();
-        let actual = parser.parse("add(1, 2, 3)");
-        assert!(matches!(
-            actual.unwrap(),
-            (Expression::FunctionCall { name: _, args: _ }, "")
-        ));
-
-        let mut parser = super::function_call();
-        let actual = parser.parse("add(a, b)");
-        assert!(matches!(
-            actual.unwrap(),
-            (Expression::FunctionCall { name: _, args: _ }, "")
-        ));
-
-        // function call with binary expression
-        let mut parser = super::function_call();
-        let actual = parser.parse("add(1 * 2, 3 - 2)");
-        assert!(matches!(
-            actual.unwrap(),
-            (Expression::FunctionCall { name: _, args: _ }, "")
-        ));
-
-        // function call with piling function
-        let mut parser = super::function_call();
-        let actual = parser.parse("add(add(1, 2), 3)");
+    #[test_case("add(1, 2, 3)"; "func_call_with_3_args")]
+    #[test_case("add(a, b)"; "func_call_with_identifiers")]
+    #[test_case("add(1 * 2, 3 - 2)"; "func_call_with_binary_operators")]
+    #[test_case("add(add(1, 2), 3)"; "func_call_with_piling_function")]
+    fn test_function_call<'a>(source: &'a str) {
+        let mut parser = crate::parser::function_call();
+        let actual = parser.parse(source);
         assert!(matches!(
             actual.unwrap(),
             (Expression::FunctionCall { name: _, args: _ }, "")
         ));
     }
 
-    #[test]
-    #[should_panic]
-    fn test_function_call_check_disable_while() {
-        let mut parser = super::function_call();
-        let actual = parser.parse("add(while (i > 0) { i; })");
-        actual.unwrap();
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_function_call_check_disable_if() {
-        let mut parser = super::function_call();
-        let actual = parser.parse("add(if (n > 1) { 1; } else { 0; })");
-        actual.unwrap();
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_function_call_check_disable_assignment() {
-        let mut parser = super::function_call();
-        let actual = parser.parse("add(n = 1)");
+    #[test_case("add(while (i > 0) { i; })" => panics "called `Result::unwrap()` on an `Err` value: UnexpectedParse")]
+    #[test_case("add(if (n > 1) { 1; } else { 0; })" => panics "called `Result::unwrap()` on an `Err` value: UnexpectedParse")]
+    #[test_case("add(n = 1)" => panics "called `Result::unwrap()` on an `Err` value: UnexpectedParse")]
+    fn test_function_call_disability<'a>(source: &'a str) {
+        let mut parser = crate::parser::function_call();
+        let actual = parser.parse(source);
         actual.unwrap();
     }
 
