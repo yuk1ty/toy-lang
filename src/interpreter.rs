@@ -33,7 +33,6 @@ impl Interpreter {
             match top_level {
                 TopLevel::FunctionDefinition { name, args, body } => {
                     self.function_environment
-                        // To avoid using unstable feature (#65490)
                         .insert(name.clone(), FunctionDef { name, args, body });
                 }
                 TopLevel::GlobalVariableDefinition { name, expression } => {

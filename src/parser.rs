@@ -393,45 +393,21 @@ where
     chainl1(additive(), op)
 }
 
-fn expression_<Input>() -> impl Parser<Input, Output = Expression>
-where
-    Input: Stream<Token = char>,
-    <Input as StreamOnce>::Error: ParseError<
-        <Input as StreamOnce>::Token,
-        <Input as StreamOnce>::Range,
-        <Input as StreamOnce>::Position,
-    >,
-{
-    comparative()
-}
-
 parser! {
     fn expression[Input]()(Input) -> Expression where [ Input: Stream<Token = char> ] {
-        expression_()
-    }
-}
-
-fn line_<Input>() -> impl Parser<Input, Output = Expression>
-where
-    Input: Stream<Token = char>,
-    <Input as StreamOnce>::Error: ParseError<
-        <Input as StreamOnce>::Token,
-        <Input as StreamOnce>::Range,
-        <Input as StreamOnce>::Position,
-    >,
-{
-    choice! {
-        while_expression(),
-        if_expression(),
-        assignment(),
-        expression_line(),
-        block_expression()
+        comparative()
     }
 }
 
 parser! {
     fn line[Input]()(Input) -> Expression where [ Input: Stream<Token = char> ] {
-        line_()
+        choice! {
+            while_expression(),
+            if_expression(),
+            assignment(),
+            expression_line(),
+            block_expression()
+        }
     }
 }
 
@@ -594,7 +570,6 @@ where
 
 pub fn parse(source: &str) -> Result<Program> {
     let mut parser = program();
-    // TODO error handling
     let parsed = parser.parse(source)?;
 
     if !parsed.1.is_empty() {
