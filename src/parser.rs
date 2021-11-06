@@ -589,7 +589,7 @@ mod test {
     use crate::{
         ast::{
             add, divide, equal_equal, greater_than, greater_than_equal, integer, less_than,
-            less_than_equal, multiply, not_equal, subtract, Expression,
+            less_than_equal, multiply, not_equal, subtract, symbol, Expression, TopLevel,
         },
         parser::{comparative, multitive},
     };
@@ -714,7 +714,7 @@ mod test {
     fn test_line() {
         let mut parser = super::line();
         let actual = parser.parse("i;");
-        actual.unwrap();
+        assert_eq!(actual.unwrap().0, symbol("i"));
     }
 
     #[test]
@@ -825,7 +825,17 @@ mod test {
             result = a + b; 
         }"#,
         );
-        println!("{:?}", actual.unwrap());
+        assert!(matches!(
+            actual.unwrap(),
+            (
+                TopLevel::FunctionDefinition {
+                    name: _,
+                    args: _,
+                    body: _
+                },
+                ""
+            )
+        ));
     }
 
     #[test]
@@ -845,6 +855,7 @@ mod test {
             }
         "#,
         );
-        actual.unwrap();
+        let result = actual.unwrap();
+        assert!(matches!(result.1, ""));
     }
 }
