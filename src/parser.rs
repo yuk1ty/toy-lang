@@ -1,3 +1,4 @@
+use anyhow::Result;
 use combine::{
     attempt, between, chainl1, choice, many, many1, optional, parser,
     parser::char::{alpha_num, digit, spaces, string},
@@ -572,10 +573,19 @@ where
     })
 }
 
-pub fn parse(source: &str) -> Program {
+pub fn parse(source: &str) -> Result<Program> {
     let mut parser = program();
     // TODO error handling
-    parser.parse(source).unwrap().0
+    let parsed = parser.parse(source)?;
+
+    if !parsed.1.is_empty() {
+        dbg!(
+            "Parsing result is still remaning. Please check your input.",
+            &parsed
+        );
+    }
+
+    Ok(parsed.0)
 }
 
 #[cfg(test)]

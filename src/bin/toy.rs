@@ -9,7 +9,7 @@ fn main() -> Result<()> {
 
     if cmd == "run" {
         let source = std::fs::read_to_string(filename)?;
-        let program = parser::parse(source.as_str());
+        let program = parser::parse(source.as_str())?;
         let mut interpreter = Interpreter::new();
         let result = interpreter.call_main(program)?;
         println!("{}", result);
