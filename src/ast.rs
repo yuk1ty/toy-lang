@@ -1,5 +1,6 @@
 #![allow(clippy::enum_variant_names)]
 
+use anyhow::{anyhow, Result};
 use std::{cell::RefCell, collections::HashMap, fmt::Debug, rc::Rc};
 
 pub fn add(lhs: Expression, rhs: Expression) -> Expression {
@@ -178,11 +179,30 @@ impl Expression {
                 e @ (Expression::IntegerLiteral(_) | Expression::Identifier(_)) => exprs.push(e),
                 e
                 @
-                Expression::BinaryExpression {
+                (Expression::BinaryExpression {
                     operator: _,
                     lhs: _,
                     rhs: _,
-                } => exprs.push(e),
+                }
+                | Expression::FunctionCall { name: _, args: _ }) => exprs.push(e),
+                // panic here is not recommended. It's inconsistent from the aspect of the entire program.
+                // If I fully figure out the usage of `ParseResult` in combine,
+                // I'll replace here to use anyhow's Result.
+                Expression::WhileExpression {
+                    condition: _,
+                    body: _,
+                } => {
+                    panic!("while can't place here");
+                }
+                Expression::IfExpression {
+                    condition: _,
+                    then_clause: _,
+                    else_clause: _,
+                } => panic!("if can't place here"),
+                Expression::Assignment {
+                    name: _,
+                    expression: _,
+                } => panic!("assignment can't place here"),
                 _ => create_vec(expr, exprs),
             }
         }
