@@ -819,9 +819,9 @@ mod test {
         ));
     }
 
-    #[test_case("add(while (i > 0) { i; })" => panics "called `Result::unwrap()` on an `Err` value: UnexpectedParse")]
-    #[test_case("add(if (n > 1) { 1; } else { 0; })" => panics "called `Result::unwrap()` on an `Err` value: UnexpectedParse")]
-    #[test_case("add(n = 1)" => panics "called `Result::unwrap()` on an `Err` value: UnexpectedParse")]
+    #[test_case("add(while (i > 0) { i; })" => panics)]
+    #[test_case("add(if (n > 1) { 1; } else { 0; })" => panics)]
+    #[test_case("add(n = 1)" => panics)]
     fn test_function_call_disability<'a>(source: &'a str) {
         let mut parser = crate::parser::function_call();
         let actual = parser.parse(source);

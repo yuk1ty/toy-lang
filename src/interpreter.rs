@@ -227,7 +227,6 @@ mod test {
         let e = assignment("a", add(integer(10), integer(10)));
         let mut interpreter = interpreter();
         assert_eq!(20, interpreter.interpret(e).unwrap());
-        // assert_eq!(20, *interpreter.environment.get("a").unwrap());
     }
 
     #[test]
