@@ -171,6 +171,11 @@ impl Interpreter {
                     None => Err(anyhow!("Function {} is not found", name)),
                 }
             }
+            Expression::Println(args) => {
+                let value = self.interpret(*args)?;
+                println!("{}", value);
+                Ok(value)
+            }
         }
     }
 

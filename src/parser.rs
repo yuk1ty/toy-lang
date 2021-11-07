@@ -273,6 +273,18 @@ where
     spaces().with(string(";").skip(spaces()))
 }
 
+fn println_token<'a, Input>() -> impl Parser<Input, Output = &'a str>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    spaces().with(string("println")).skip(spaces())
+}
+
 fn ident<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
@@ -402,6 +414,7 @@ parser! {
 parser! {
     fn line[Input]()(Input) -> Expression where [ Input: Stream<Token = char> ] {
         choice! {
+            println(),
             while_expression(),
             if_expression(),
             assignment(),
@@ -503,6 +516,23 @@ where
         )
         .map(move |exprs: Expressions| call(name.clone(), exprs.0))
     }))
+}
+
+fn println<Input>() -> impl Parser<Input, Output = Expression>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    attempt(
+        println_token()
+            .with(between(lparen(), rparen(), expression()))
+            .skip(semi_colon())
+            .map(|e| crate::ast::println(e)),
+    )
 }
 
 fn program<Input>() -> impl Parser<Input, Output = Program>
@@ -737,6 +767,17 @@ mod test {
     }
 
     #[test]
+    fn test_println() {
+        let mut parser = super::line();
+        let actual = parser.parse(
+            r#"
+            println(123);
+        "#,
+        );
+        assert_eq!(actual.unwrap().0, crate::ast::println(integer(123)));
+    }
+
+    #[test]
     fn test_if_expression_without_else() {
         let mut parser = if_expression();
         let actual = parser.parse(
@@ -863,7 +904,8 @@ mod test {
                 }
             }
             define main() {
-                factorial(5);
+                result = factorial(5);
+                println(result);
             }
         "#,
         );

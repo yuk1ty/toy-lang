@@ -127,6 +127,10 @@ pub fn call(name: impl Into<String>, elements: Vec<Expression>) -> Expression {
     }
 }
 
+pub fn println(arg: Expression) -> Expression {
+    Expression::Println(Box::new(arg))
+}
+
 pub fn define_function(name: impl Into<String>, args: Vec<String>, body: Expression) -> TopLevel {
     TopLevel::FunctionDefinition {
         name: name.into(),
@@ -169,6 +173,7 @@ pub enum Expression {
         name: String,
         args: Vec<Expression>,
     },
+    Println(Box<Expression>),
 }
 
 impl Expression {
