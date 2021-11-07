@@ -184,81 +184,42 @@ mod test {
     use super::*;
     use crate::ast::*;
 
+    use test_case::test_case;
+
     fn interpreter() -> Interpreter {
         Interpreter::new()
     }
 
-    #[test]
-    fn test_10_plus_20_should_work() {
-        let e = add(integer(10), integer(20));
-        assert_eq!(30, interpreter().interpret(e).unwrap());
+    #[test_case(10, 20 => 30; "10_plus_20")]
+    #[test_case(10, 0 => 10; "10_plus_0")]
+    #[test_case(0, 10 => 10; "0_plus_10")]
+    fn test_plus_should_work(lhs: i32, rhs: i32) -> i32 {
+        let e = add(integer(lhs), integer(rhs));
+        interpreter().interpret(e).unwrap()
     }
 
-    #[test]
-    fn test_10_plus_0_should_work() {
-        let e = add(integer(10), integer(0));
-        assert_eq!(10, interpreter().interpret(e).unwrap());
+    #[test_case(10, 20 => -10; "10_minus_20")]
+    #[test_case(10, 0 => 10; "10_minus_0")]
+    #[test_case(0, 10 => -10; "0_minus_10")]
+    fn test_minus_should_work(lhs: i32, rhs: i32) -> i32 {
+        let e = subtract(integer(lhs), integer(rhs));
+        interpreter().interpret(e).unwrap()
     }
 
-    #[test]
-    fn test_0_plus_10_should_work() {
-        let e = add(integer(0), integer(10));
-        assert_eq!(10, interpreter().interpret(e).unwrap());
+    #[test_case(10, 20 => 200; "10_multiply_20")]
+    #[test_case(10, 0 => 0; "10_multiply_0")]
+    #[test_case(0, 10 => 0; "0_multiply_10")]
+    fn test_multiply_should_work(lhs: i32, rhs: i32) -> i32 {
+        let e = multiply(integer(lhs), integer(rhs));
+        interpreter().interpret(e).unwrap()
     }
 
-    #[test]
-    fn test_10_minus_20_should_work() {
-        let e = subtract(integer(10), integer(20));
-        assert_eq!(-10, interpreter().interpret(e).unwrap());
-    }
-
-    #[test]
-    fn test_10_minus_0_should_work() {
-        let e = subtract(integer(10), integer(0));
-        assert_eq!(10, interpreter().interpret(e).unwrap());
-    }
-
-    #[test]
-    fn test_0_minus_10_should_work() {
-        let e = subtract(integer(0), integer(10));
-        assert_eq!(-10, interpreter().interpret(e).unwrap());
-    }
-
-    #[test]
-    fn test_10_multiply_20_should_work() {
-        let e = multiply(integer(10), integer(20));
-        assert_eq!(200, interpreter().interpret(e).unwrap());
-    }
-
-    #[test]
-    fn test_10_multiply_0_should_work() {
-        let e = multiply(integer(10), integer(0));
-        assert_eq!(0, interpreter().interpret(e).unwrap());
-    }
-
-    #[test]
-    fn test_0_multiply_10_should_work() {
-        let e = multiply(integer(0), integer(10));
-        assert_eq!(0, interpreter().interpret(e).unwrap());
-    }
-
-    #[test]
-    fn test_20_divide_10_should_work() {
-        let e = divide(integer(20), integer(10));
-        assert_eq!(2, interpreter().interpret(e).unwrap());
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_10_divide_0_should_work() {
-        let e = divide(integer(10), integer(0));
-        interpreter().interpret(e).unwrap();
-    }
-
-    #[test]
-    fn test_0_divide_10_should_work() {
-        let e = divide(integer(0), integer(10));
-        assert_eq!(0, interpreter().interpret(e).unwrap());
+    #[test_case(20, 10 => 2; "20_divide_10")]
+    #[test_case(10, 0 => panics "attempt to divide by zero"; "10_divide_0")]
+    #[test_case(0, 10 => 0; "0_divide_10")]
+    fn test_divide_should_work(lhs: i32, rhs: i32) -> i32 {
+        let e = divide(integer(lhs), integer(rhs));
+        interpreter().interpret(e).unwrap()
     }
 
     #[test]
