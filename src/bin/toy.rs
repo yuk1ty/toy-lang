@@ -11,8 +11,7 @@ fn main() -> Result<()> {
         let source = std::fs::read_to_string(filename)?;
         let program = parser::parse(source.as_str())?;
         let mut interpreter = Interpreter::new();
-        let result = interpreter.call_main(program)?;
-        println!("{}", result);
+        let _ = interpreter.call_main(program)?;
         Ok(())
     } else {
         Err(anyhow!("Example: toy run ./source/factorial.toy"))
