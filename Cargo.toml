@@ -6,6 +6,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.44"
 combine = "4.6.1"
+chumsky = "0.3.2"
 
 [dev-dependencies]
 test-case = "1.2.0"
