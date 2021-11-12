@@ -285,6 +285,42 @@ where
     spaces().with(string("println")).skip(spaces())
 }
 
+fn r#for<'a, Input>() -> impl Parser<Input, Output = &'a str>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    spaces().with(string("for")).skip(spaces())
+}
+
+fn r#in<'a, Input>() -> impl Parser<Input, Output = &'a str>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    spaces().with(string("in")).skip(spaces())
+}
+
+fn r#to<'a, Input>() -> impl Parser<Input, Output = &'a str>
+where
+    Input: Stream<Token = char>,
+    <Input as StreamOnce>::Error: ParseError<
+        <Input as StreamOnce>::Token,
+        <Input as StreamOnce>::Range,
+        <Input as StreamOnce>::Position,
+    >,
+{
+    spaces().with(string("to")).skip(spaces())
+}
+
 fn ident<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
