@@ -40,7 +40,7 @@ impl Interpreter {
                     self.variable_environment
                         .bindings
                         .borrow_mut()
-                        .insert(name.to_string(), body);
+                        .insert(name, body);
                 }
             }
         }
@@ -117,7 +117,6 @@ impl Interpreter {
             }
             Expression::WhileExpression { condition, body } => {
                 loop {
-                    // TODO
                     let condition = self.interpret(condition)?;
                     if condition != 0 {
                         self.interpret(body)?;
@@ -159,7 +158,7 @@ impl Interpreter {
 
                         for (i, formal_param_name) in fd_args.into_iter().enumerate() {
                             self.variable_environment.bindings.borrow_mut().insert(
-                                formal_param_name.to_string(),
+                                formal_param_name,
                                 values
                                     .get(i)
                                     .cloned()

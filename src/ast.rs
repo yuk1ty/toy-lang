@@ -266,6 +266,7 @@ impl Program {
     }
 }
 
+// TODO Rc & RefCell can be removed
 pub type Binding = Rc<RefCell<HashMap<String, i32>>>;
 
 #[derive(PartialEq, Clone, Debug)]
