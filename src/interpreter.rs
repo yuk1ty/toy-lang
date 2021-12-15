@@ -36,7 +36,7 @@ impl Interpreter {
                         .insert(name.clone(), FunctionDef { name, args, body });
                 }
                 TopLevel::GlobalVariableDefinition { name, expression } => {
-                    let body = self.interpret(*expression)?;
+                    let body = self.interpret(&expression)?;
                     self.variable_environment
                         .bindings
                         .borrow_mut()
@@ -52,17 +52,17 @@ impl Interpreter {
                     args: _,
                     body,
                 } = main_func;
-                Ok(self.interpret(*body)?)
+                Ok(self.interpret(&body)?)
             }
             None => Err(anyhow!("This program doesn't have main() function.")),
         }
     }
 
-    fn interpret(&mut self, expression: Expression) -> Result<i32> {
+    fn interpret(&mut self, expression: &Expression) -> Result<i32> {
         match expression {
             Expression::BinaryExpression { operator, lhs, rhs } => {
-                let lhs = self.interpret(*lhs)?;
-                let rhs = self.interpret(*rhs)?;
+                let lhs = self.interpret(lhs)?;
+                let rhs = self.interpret(rhs)?;
                 Ok(match operator {
                     Operator::Add => lhs + rhs,
                     Operator::Subtract => lhs - rhs,
@@ -76,7 +76,7 @@ impl Interpreter {
                     Operator::NotEqual => (lhs != rhs) as i32,
                 })
             }
-            Expression::IntegerLiteral(value) => Ok(value),
+            Expression::IntegerLiteral(value) => Ok(*value),
             Expression::Identifier(ident) => match self
                 .variable_environment
                 .find_binding(&ident)
@@ -89,15 +89,15 @@ impl Interpreter {
                 None => Err(anyhow!("Undefined variable {}", ident)),
             },
             Expression::Assignment { name, expression } => {
-                let value = self.interpret(*expression)?;
+                let value = self.interpret(expression)?;
                 let bindings_opt = self.variable_environment.find_binding(&name);
                 match bindings_opt {
-                    Some(map) => map.borrow_mut().insert(name, value),
+                    Some(map) => map.borrow_mut().insert(name.clone(), value),
                     None => self
                         .variable_environment
                         .bindings
                         .borrow_mut()
-                        .insert(name, value),
+                        .insert(name.clone(), value),
                 };
                 Ok(value)
             }
@@ -106,19 +106,21 @@ impl Interpreter {
                 then_clause,
                 else_clause,
             } => {
-                let condition = self.interpret(*condition)?;
+                let condition = self.interpret(condition)?;
                 if condition != 0 {
-                    Ok(self.interpret(*then_clause)?)
+                    Ok(self.interpret(then_clause)?)
                 } else {
-                    else_clause.map_or_else(|| Ok(1), |expr| self.interpret(*expr))
+                    else_clause
+                        .as_ref()
+                        .map_or_else(|| Ok(1), |expr| self.interpret(expr))
                 }
             }
             Expression::WhileExpression { condition, body } => {
                 loop {
                     // TODO
-                    let condition = self.interpret(*condition.clone())?;
+                    let condition = self.interpret(condition)?;
                     if condition != 0 {
-                        self.interpret(*body.clone())?;
+                        self.interpret(body)?;
                     } else {
                         break;
                     }
@@ -164,7 +166,7 @@ impl Interpreter {
                                     .ok_or_else(|| anyhow!("Value not found at index: {}", i))?,
                             );
                         }
-                        let result = self.interpret(*fd_body);
+                        let result = self.interpret(&fd_body);
                         self.variable_environment = backup;
                         result
                     }
@@ -172,7 +174,7 @@ impl Interpreter {
                 }
             }
             Expression::Println(args) => {
-                let value = self.interpret(*args)?;
+                let value = self.interpret(args)?;
                 println!("{}", value);
                 Ok(value)
             }
@@ -200,7 +202,7 @@ mod test {
     #[test_case(0, 10 => 10; "0_plus_10")]
     fn test_plus_should_work(lhs: i32, rhs: i32) -> i32 {
         let e = add(integer(lhs), integer(rhs));
-        interpreter().interpret(e).unwrap()
+        interpreter().interpret(&e).unwrap()
     }
 
     #[test_case(10, 20 => -10; "10_minus_20")]
@@ -208,7 +210,7 @@ mod test {
     #[test_case(0, 10 => -10; "0_minus_10")]
     fn test_minus_should_work(lhs: i32, rhs: i32) -> i32 {
         let e = subtract(integer(lhs), integer(rhs));
-        interpreter().interpret(e).unwrap()
+        interpreter().interpret(&e).unwrap()
     }
 
     #[test_case(10, 20 => 200; "10_multiply_20")]
@@ -216,7 +218,7 @@ mod test {
     #[test_case(0, 10 => 0; "0_multiply_10")]
     fn test_multiply_should_work(lhs: i32, rhs: i32) -> i32 {
         let e = multiply(integer(lhs), integer(rhs));
-        interpreter().interpret(e).unwrap()
+        interpreter().interpret(&e).unwrap()
     }
 
     #[test_case(20, 10 => 2; "20_divide_10")]
@@ -224,32 +226,32 @@ mod test {
     #[test_case(0, 10 => 0; "0_divide_10")]
     fn test_divide_should_work(lhs: i32, rhs: i32) -> i32 {
         let e = divide(integer(lhs), integer(rhs));
-        interpreter().interpret(e).unwrap()
+        interpreter().interpret(&e).unwrap()
     }
 
     #[test]
     fn test_assignment_should_work() {
         let e = assignment("a", add(integer(10), integer(10)));
         let mut interpreter = interpreter();
-        assert_eq!(20, interpreter.interpret(e).unwrap());
+        assert_eq!(20, interpreter.interpret(&e).unwrap());
     }
 
     #[test]
     fn test_identifier_after_assignment_should_work() {
         let mut interpreter = interpreter();
         let e1 = assignment("a", add(integer(10), integer(10)));
-        assert_eq!(20, interpreter.interpret(e1).unwrap());
+        assert_eq!(20, interpreter.interpret(&e1).unwrap());
         let e2 = add(symbol("a"), integer(10));
-        assert_eq!(30, interpreter.interpret(e2).unwrap());
+        assert_eq!(30, interpreter.interpret(&e2).unwrap());
     }
 
     #[test]
     fn test_increment_should_work() {
         let mut interpreter = interpreter();
         let e1 = assignment("a", add(integer(10), integer(10)));
-        assert_eq!(20, interpreter.interpret(e1).unwrap());
+        assert_eq!(20, interpreter.interpret(&e1).unwrap());
         let e2 = add(symbol("a"), integer(10));
-        assert_eq!(30, interpreter.interpret(e2).unwrap());
+        assert_eq!(30, interpreter.interpret(&e2).unwrap());
     }
 
     #[test]
@@ -257,9 +259,9 @@ mod test {
     fn test_identifier_not_found() {
         let mut interpreter = interpreter();
         let e1 = assignment("a", add(integer(10), integer(10)));
-        assert_eq!(20, interpreter.interpret(e1).unwrap());
+        assert_eq!(20, interpreter.interpret(&e1).unwrap());
         let e2 = add(symbol("b"), integer(10));
-        interpreter.interpret(e2).unwrap();
+        interpreter.interpret(&e2).unwrap();
     }
 
     #[test]
@@ -269,7 +271,7 @@ mod test {
             integer(33),
             Some(integer(42)),
         );
-        assert_eq!(33, interpreter().interpret(e).unwrap());
+        assert_eq!(33, interpreter().interpret(&e).unwrap());
     }
 
     #[test]
@@ -277,7 +279,7 @@ mod test {
         let mut interpreter = interpreter();
         // val count = 0
         let e1 = assignment("count", integer(0));
-        assert_eq!(0, interpreter.interpret(e1).unwrap());
+        assert_eq!(0, interpreter.interpret(&e1).unwrap());
         // while (count < 3) {
         //    count = count + 1
         // }
@@ -285,7 +287,7 @@ mod test {
             less_than(symbol("count"), integer(3)),
             assignment("count", add(symbol("count"), integer(1))),
         );
-        assert_eq!(1, interpreter.interpret(e2).unwrap());
+        assert_eq!(1, interpreter.interpret(&e2).unwrap());
     }
 
     #[test]
